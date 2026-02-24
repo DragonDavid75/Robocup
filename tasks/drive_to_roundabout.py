@@ -5,18 +5,17 @@ from spose import pose
 import time
 
 
-class DriveOneMeterTask(BaseTask):
+class DriveToRoundaboutTask(BaseTask):
 
-    def __init__(self, world, robot):
-        super().__init__(world, robot)
+    def __init__(self, world, motion_controller):
+        super().__init__(world, motion_controller)
         self.state = 0
         self.start_time = 0
 
     def start(self):
         super().start()
-        print("[TASK] DriveOneMeter started")
+        print("[TASK] DriveToRoundabout started")
         pose.tripBreset()
-        self.robot.set_led(0, 100, 0)  # green
         self.state = 0
         self.start_time = time.time()
 
@@ -24,9 +23,12 @@ class DriveOneMeterTask(BaseTask):
 
         if self.state == 0:
             # Start driving
-            self.world.set_motion(0.2, 0.0)
-            self.robot.set_servo(1, -800, 300)
-            self.state = 1
+            self.motion_controller.follow_until_intersection(0.5)
+            while self.motion_controller.current_task == 'line':
+                time.sleep(0.1)  # Wait until the line following task is active
+            
+            # Turn left at the intersection
+            
 
         elif self.state == 1:
             # Check distance or timeout

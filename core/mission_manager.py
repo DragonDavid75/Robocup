@@ -7,9 +7,9 @@ from tasks.base_task import TaskStatus
 
 class MissionManager:
 
-    def __init__(self, world, robot):
+    def __init__(self, world, motion_controller):
         self.world = world
-        self.robot = robot
+        self.motion_controller = motion_controller
         self.current_task = None
         self.task_queue = []
         self.running = True
@@ -22,7 +22,7 @@ class MissionManager:
         Define the mission sequence.
         This is where your group defines order of tasks.
         """
-        self.task_queue.append(DriveOneMeterTask(self.world, self.robot))
+        self.task_queue.append(DriveOneMeterTask(self.world, self.motion_controller))
 
     def start_next_task(self):
         if len(self.task_queue) == 0:
