@@ -22,25 +22,23 @@ class DriveToRoundaboutTask(BaseTask):
     def update(self):
 
         if self.state == 0:
-            # Start driving
-            self.motion_controller.follow_until_intersection(0.5)
-            while self.motion_controller.current_task == 'line':
+            # Follow the line until the end of the line (start of the roundabout)
+            self.motion_controller.follow_until_end_of_line(0.5, left_side=True, ref_pos=0.0)
+            while self.motion_controller.current_task != None:
                 time.sleep(0.1)  # Wait until the line following task is active
-            
-            # Turn left at the intersection
-            
+            self.state = 1
 
         elif self.state == 1:
-            # Check distance or timeout
-            if pose.tripB > 1.0 or pose.tripBtimePassed() > 15:
-                self.world.set_motion(0.0, 0.0)
-                self.robot.set_servo(1, 0, 0)
-                self.state = 2
+            # Drive 1 meter to enter the roundabout
+            self.motion_controller.drive_distance(1.0, 0.5)
+            while self.motion_controller.current_task != None:
+                time.sleep(0.1)  # Wait until the drive distance task is active
+            self.state = 2
 
         elif self.state == 2:
             # Wait until fully stopped
             if abs(pose.velocity()) < 0.001:
-                print("[TASK] DriveOneMeter completed")
+                print("[TASK] DriveToRoundabout completed")
                 return TaskStatus.DONE
 
         return TaskStatus.RUNNING
@@ -48,4 +46,4 @@ class DriveToRoundaboutTask(BaseTask):
     def stop(self):
         super().stop()
         self.robot.set_led(0, 0, 0)
-        print("[TASK] DriveOneMeter stopped")
+        print("[TASK] DriveToRoundabout stopped")

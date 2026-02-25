@@ -38,6 +38,34 @@ class MotionController(threading.Thread):
             # The actual PID control happens inside sedge.py/RobotInterface
             pass
 
+    def _handle_line_end_mission(self):
+        """Logic for following line until it ends (no line detected)."""
+        data = self.robot.get_line_data()
+        from sedge import edge
+        
+        if not edge.lineDetected:
+            print("% MotionController: End of line detected!")
+            self.robot.stop()
+            self.current_task = None
+        else:
+            # Maintain the line follow command
+            pass
+
+    def _handle_drive_distance_mission(self):
+        """Logic for driving a specific distance."""
+        start_tripB = self.task_params.get("start_tripB", 0)
+        current_tripB = self.robot.get_odometry()["tripB"]
+        target_distance = self.task_params.get("target_distance", 0)
+        velocity = self.task_params.get("velocity", 0)
+
+        if current_tripB - start_tripB >= target_distance:
+            print("% MotionController: Drive distance complete.")
+            self.robot.stop()
+            self.current_task = None
+        else:
+            # Maintain the drive command
+            self.robot.set_velocity(velocity, 0)
+
     def _handle_turn_mission(self):
         """Logic for turning in place to a relative heading."""
         target_angle = self.task_params.get("target_angle", 0)
@@ -55,11 +83,27 @@ class MotionController(threading.Thread):
 
     # --- High Level Commands for Mission Logic ---
 
-    def follow_until_intersection(self, velocity):
+    def follow_until_intersection(self, velocity, left_side=True, ref_pos=0.0):
         """Follows the line and stops automatically at a cross-line."""
         print(f"% MotionController: Following line at {velocity} m/s")
-        self.robot.set_line_control(velocity, True)
-        self.current_task = 'line'
+        self.robot.set_line_control(velocity, left_side, ref_pos)
+        self.current_task = 'line_intersection'
+
+    def follow_until_end_of_line(self, velocity, left_side=True, ref_pos=0.0):
+        """Follows the line and stops when it ends (no line detected)."""
+        print(f"% MotionController: Following line at {velocity} m/s until end of line")
+        self.robot.set_line_control(velocity, left_side, ref_pos)
+        self.current_task = 'line_end'
+
+    def drive_distance(self, distance, velocity):
+        """Drives a specific distance in meters."""
+        print(f"% MotionController: Driving {distance} meters at {velocity} m/s")
+        self.robot.set_line_control(0, False) # Ensure line follow is off
+        self.robot.reset_trip()
+        self.task_params["start_tripB"] = self.robot.get_odometry()["tripB"]
+        self.task_params["target_distance"] = distance
+        self.task_params["velocity"] = velocity
+        self.current_task = 'drive_distance'
 
     def turn_in_place(self, angle_rad):
         """Turns the robot by a specific amount of radians."""
