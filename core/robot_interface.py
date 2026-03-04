@@ -1,12 +1,12 @@
 # core/robot_interface.py
-from uservice import service
-from spose import pose
-from sir import ir
-from srobot import robot
-from sedge import edge
-from simu import imu
-from sgpio import gpio
-from scam import cam
+from mqtt_python.spose import pose
+from mqtt_python.uservice import service
+from mqtt_python.sir import ir
+from mqtt_python.srobot import robot
+from mqtt_python.sedge import edge
+from mqtt_python.sgpio import gpio
+from mqtt_python.scam import cam
+from mqtt_python.simu import imu
 import time as t
 
 class RobotInterface:
@@ -55,7 +55,7 @@ class RobotInterface:
 
     def get_odometry(self):
         """Returns trip distance (tripB) and trip heading change (tripBh)."""
-        return {"dist": pose.tripB, "angle": pose.tripBh}
+        return {"dist": pose.tripB, "angle": pose.tripBh, "time": pose.tripBtime}
 
     def reset_trip(self):
         """Resets trip meters/timers."""

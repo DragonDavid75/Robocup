@@ -30,4 +30,4 @@ class BaseTask:
         """
         Called once when task finishes or is aborted.
         """
-        self.world.set_motion(0, 0)
+        self.started = False
