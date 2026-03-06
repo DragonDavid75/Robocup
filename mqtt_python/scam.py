@@ -41,7 +41,7 @@ class SCam:
 
   def setup(self):
     if self.useCam:
-      from uservice import service
+      from .uservice import service
       self.cap = cv.VideoCapture(f'http://{service.host}:7123/stream.mjpg')
       if self.cap.isOpened():
         self.th = Thread(target = cam.run)
@@ -62,7 +62,7 @@ class SCam:
         print("% SCam:: could not open")
       fail = True
     if not fail:
-      from uservice import service
+      from .uservice import service
       self.getFrame = True
       cnt = 0 # timeout
       while self.getFrame and cnt < 100 and not service.stop:
@@ -77,7 +77,7 @@ class SCam:
       return True, self.savedFrame, self.frameTime
 
   def run(self):
-    from uservice import service
+    from .uservice import service
     # print("% camera thread running")
     cnt = 0;
     first = True

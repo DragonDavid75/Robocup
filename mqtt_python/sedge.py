@@ -26,7 +26,7 @@ from datetime import *
 import time as t
 from threading import Thread
 import cv2 as cv
-from ulog import flog
+from .ulog import flog
 
 class SEdge:
     # raw AD values
@@ -90,7 +90,7 @@ class SEdge:
     ##########################################################
 
     def setup(self):
-      from uservice import service
+      from .uservice import service
       sendBlack = False
       loops = 0
       # turn line sensor on (command 'lip 1')
@@ -154,7 +154,7 @@ class SEdge:
     ##########################################################
 
     def print(self):
-      from uservice import service
+      from .uservice import service
       print("% Edge (sedge.py):: " + str(self.edgeTime - service.startTime) +
             f" ({self.edge[0]}, " +
             f"{self.edge[1]}, " +
@@ -167,7 +167,7 @@ class SEdge:
             f" {self.edgeInterval:.2f} ms " +
             str(self.edgeUpdCnt))
     def printn(self):
-      from uservice import service
+      from .uservice import service
       print("% Edge (sedge.py):: normalized " + str(self.edge_nTime - service.startTime) +
             f" ({self.edge_n[0]}, " +
             f"{self.edge_n[1]}, " +
@@ -180,7 +180,7 @@ class SEdge:
             f" {self.edge_nInterval:.2f} ms " +
             str(self.edge_nUpdCnt))
     def printnw(self):
-      from uservice import service
+      from .uservice import service
       print("% Edge (sedge.py):: white level " + str(self.edge_n_wTime) +
             f" ({self.edge_n_w[0]}, " +
             f"{self.edge_n_w[1]}, " +
@@ -198,7 +198,7 @@ class SEdge:
         # decode MQTT message
         used = True
         if topic == "T0/liv": # raw AD value
-          from uservice import service
+          from .uservice import service
           gg = msg.split(" ")
           if (len(gg) >= 4):
             t0 = self.edgeTime;
@@ -219,7 +219,7 @@ class SEdge:
             self.edgeUpdCnt += 1
             # self.print()
         elif topic == "T0/livn": # normalized after calibration range (0..1000)
-          from uservice import service
+          from .uservice import service
           gg = msg.split(" ")
           if (len(gg) >= 4):
             t0 = self.edge_nTime;
@@ -253,7 +253,7 @@ class SEdge:
               flog.write()
             #self.printn()
         elif topic == "T0/liw": # get white level
-          from uservice import service
+          from .uservice import service
           gg = msg.split(" ")
           if (len(gg) >= 4):
             self.edge_n_wTime = datetime.fromtimestamp(float(gg[0]))
@@ -345,7 +345,7 @@ class SEdge:
     ##########################################################
 
     def followLine(self):
-      from uservice import service
+      from .uservice import service
       # some parameters depend on sample time, adjust
       # print(f"LineCtrl:: sample time {self.edge_nInterval}")
       if abs(self.edge_nInterval - self.edgeIntervalSetup) > 2.0: # ms
@@ -399,7 +399,7 @@ class SEdge:
     ##########################################################
 
     def terminate(self):
-      from uservice import service
+      from .uservice import service
       self.need_data = False
       print("% Edge (sedge.py):: turn off line sensor")
       service.send(self.topicCmdT0, "lip 0")

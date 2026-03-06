@@ -30,7 +30,7 @@ class ULog:
   f = open('logfile.txt', 'w', encoding="utf-8")
 
   def setup(self):
-    from sedge import edge
+    from .sedge import edge
     self.f.write("% logfile for Python side\n")
     self.f.write("% 1 time (sec)\n")
     self.f.write("% 2 Mission state\n")
@@ -43,28 +43,28 @@ class ULog:
     pass
 
   def writeRemark(self, remark = "remark"):
-    from uservice import service
+    from .uservice import service
     if not service.stop:
       lt = t.time()
       # timestamp and remark preceded by a MATLAB comment character
       self.f.write(f"% {lt} {remark}\n")
 
   def writeDataString(self, data = "remark"):
-    from uservice import service
+    from .uservice import service
     if not service.stop:
       lt = t.time()
       # timestamp and remark preceded by a MATLAB comment character
       self.f.write(f"{lt} {data}\n")
 
   def write(self, state = -1):
-    from spose import pose
-    from sir import ir
-    from srobot import robot
-    from scam import cam
-    from sedge import edge
-    from sgpio import gpio
-    from scam import cam
-    from uservice import service
+    from .spose import pose
+    from .sir import ir
+    from .srobot import robot
+    from .scam import cam
+    from .sedge import edge
+    from .sgpio import gpio
+    from .scam import cam
+    from .uservice import service
     if not service.stop:
       lt = t.time()
       if state >= 0:

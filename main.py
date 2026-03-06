@@ -3,6 +3,7 @@ from core.robot_interface import RobotInterface
 from core.motion_controller import MotionController
 from core.vision_system import VisionSystem
 from core.mission_manager import MissionManager
+from core.localizer import Localizer
 import time
 
 world = WorldModel()
@@ -10,10 +11,12 @@ robot = RobotInterface()
 
 motion = MotionController(world, robot)
 vision = VisionSystem(world)
-mission = MissionManager(world, motion)
+localizer = Localizer(world)
+mission = MissionManager(world, robot)
 
 motion.start()
 vision.start()
+localizer.start()
 
 try:
     while True:
@@ -25,4 +28,5 @@ except KeyboardInterrupt:
 
 motion.stop()
 vision.stop()
+localizer.stop()
 robot.terminate()
