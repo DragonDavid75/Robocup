@@ -8,9 +8,9 @@ class TaskStatus:
 
 class BaseTask:
 
-    def __init__(self, world, robot):
+    def __init__(self, world, motion_controller):
         self.world = world
-        self.robot = robot
+        self.motion_controller = motion_controller
         self.started = False
 
     def start(self):
@@ -30,4 +30,4 @@ class BaseTask:
         """
         Called once when task finishes or is aborted.
         """
-        self.world.set_motion(0, 0)
+        self.started = False
