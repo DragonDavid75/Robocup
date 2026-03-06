@@ -70,7 +70,7 @@ class MotionController(threading.Thread):
         target_distance = self.task_params.get("target_distance", 0)
         velocity = self.task_params.get("velocity", 0)
 
-        print(f"% MotionController: Driving distance - current: {current_dist:.2f} m, target: {target_distance:.2f} m")
+        # print(f"% MotionController: Driving distance - current: {current_dist:.2f} m, target: {target_distance:.2f} m")
 
         if current_dist >= target_distance:
             print("% MotionController: Drive distance complete.")
@@ -108,6 +108,7 @@ class MotionController(threading.Thread):
     def follow_until_intersection_or_end_line(self, velocity, left_side=True, ref_pos=0.0):
         """Follows the line and stops automatically at a cross-line."""
         print(f"% MotionController: Following line at {velocity} m/s")
+        self.robot.reset_trip()
         self.robot.set_line_control(velocity, left_side, ref_pos)
         self.current_task = 'line_intersection_or_end'
 
@@ -141,11 +142,6 @@ class MotionController(threading.Thread):
         # Negative angle = turn right (negative angular velocity)
         turn_speed = 0.5
         self.robot.set_velocity(0, turn_speed)
-
-    def turn_around(self):
-        """180 degree turn."""
-        import math
-        self.turn_in_place(math.pi)
 
     def servo_control(self, idx, pos, speed):
         """Direct servo control."""
