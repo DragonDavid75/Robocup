@@ -1,6 +1,8 @@
 # core/motion_controller.py
 import threading
 import time
+from mqtt_python.uservice import service
+from mqtt_python.sedge import edge
 
 class MotionController(threading.Thread):
     def __init__(self, world, robot):
@@ -14,10 +16,10 @@ class MotionController(threading.Thread):
 
     def run(self):
         while self.running:
-            if self.current_task == 'line_intersection':
-                self._handle_line_intersection_mission()
-            elif self.current_task == 'line_end':
-                self._handle_line_end_mission()
+            if self.current_task == 'line_intersection_or_end':
+                self._handle_line_intersection_or_end_mission()
+            elif self.current_task == 'line_distance':
+                self._handle_line_distance_mission()
             elif self.current_task == 'turn':
                 self._handle_turn_mission()
             elif self.current_task == 'drive_distance':
@@ -26,33 +28,36 @@ class MotionController(threading.Thread):
                 self._handle_servo_control()
             elif service.stop:
                 print("% MotionController: Emergency stop activated!")
+                self.stop()
             else:
                 # No active mission, stop the robot to be safe
                 self.robot.stop()
             
             time.sleep(0.05)  # 20 Hz
 
-    def _handle_line_intersection_mission(self):
-        """Logic for following line until an intersection."""
+    def _handle_line_intersection_or_end_mission(self):
+        """Logic for following line until an intersection or end of line."""
         data = self.robot.get_line_data()
-        # crossingLine is determined in sedge.py (average reflectivity > threshold)
-        from sedge import edge
-        
-        if edge.crossingLine:
-            print("% MotionController: Intersection detected!")
+
+        # print(f"% MotionController: Line data - crossingLine: {data['crossingLine']}, lineValidCnt: {data['lineValidCnt']}")
+
+        if edge.crossingLine or edge.lineValidCnt == 0:
+            print("% MotionController: Intersection or end of line detected!")
             self.robot.stop()
             self.current_task = None
         else:
             # Maintain the line follow command
             pass
 
-    def _handle_line_end_mission(self):
-        """Logic for following line until it ends (no line detected)."""
-        data = self.robot.get_line_data()
-        from sedge import edge
-        
-        if not edge.lineDetected:
-            print("% MotionController: End of line detected!")
+    def _handle_line_distance_mission(self):
+        """Logic for following line for a specific distance."""
+        current_dist = self.robot.get_odometry()["dist"]
+        target_distance = self.task_params.get("target_distance", 0)
+
+        # print(f"% MotionController: Following line - current distance: {current_dist:.2f} m, target: {target_distance:.2f} m")
+
+        if current_dist >= target_distance or edge.lineValidCnt == 0:
+            print("% MotionController: Line follow distance complete.")
             self.robot.stop()
             self.current_task = None
         else:
@@ -96,20 +101,23 @@ class MotionController(threading.Thread):
         pos = self.task_params.get("servo_pos", 0)
         speed = self.task_params.get("servo_speed", 0)
         self.robot.set_servo(idx, pos, speed)
+        self.current_task = None # Assume servo command is instantaneous for simplicity
 
     # --- High Level Commands for Mission Logic ---
 
-    def follow_until_intersection(self, velocity, left_side=True, ref_pos=0.0):
+    def follow_until_intersection_or_end_line(self, velocity, left_side=True, ref_pos=0.0):
         """Follows the line and stops automatically at a cross-line."""
         print(f"% MotionController: Following line at {velocity} m/s")
         self.robot.set_line_control(velocity, left_side, ref_pos)
-        self.current_task = 'line_intersection'
+        self.current_task = 'line_intersection_or_end'
 
-    def follow_until_end_of_line(self, velocity, left_side=True, ref_pos=0.0):
-        """Follows the line and stops when it ends (no line detected)."""
-        print(f"% MotionController: Following line at {velocity} m/s until end of line")
+    def follow_for_distance(self, velocity, distance, left_side=True, ref_pos=0.0):
+        """Follows the line for a specific distance, then stops."""
+        print(f"% MotionController: Following line for {distance} meters at {velocity} m/s")
+        self.robot.reset_trip()
         self.robot.set_line_control(velocity, left_side, ref_pos)
-        self.current_task = 'line_end'
+        self.task_params["target_distance"] = distance * self.distance_ratio
+        self.current_task = 'line_distance'
 
     def drive_distance(self, distance, velocity):
         """Drives a specific distance in meters."""
@@ -131,7 +139,7 @@ class MotionController(threading.Thread):
 
         # Positive angle = turn left (positive angular velocity)
         # Negative angle = turn right (negative angular velocity)
-        turn_speed = 0.8 if angle_rad > 0 else -0.8
+        turn_speed = 0.5
         self.robot.set_velocity(0, turn_speed)
 
     def turn_around(self):

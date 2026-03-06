@@ -3,6 +3,7 @@
 import time
 from tasks.drive_one_meter import DriveOneMeterTask
 from tasks.drive_to_roundabout import DriveToRoundaboutTask
+from tasks.turn_in_place import TurnInPlaceTask
 from tasks.base_task import TaskStatus
 
 
@@ -23,8 +24,9 @@ class MissionManager:
         Define the mission sequence.
         This is where your group defines order of tasks.
         """
-        # self.task_queue.append(DriveOneMeterTask(self.world, self.motion_controller))
-        self.task_queue.append(DriveToRoundaboutTask(self.world, self.motion_controller))
+        self.task_queue.append(DriveOneMeterTask(self.world, self.motion_controller))
+        # self.task_queue.append(DriveToRoundaboutTask(self.world, self.motion_controller))
+        # self.task_queue.append(TurnInPlaceTask(self.world, self.motion_controller))
 
     def start_next_task(self):
         if len(self.task_queue) == 0:

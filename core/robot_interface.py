@@ -51,7 +51,7 @@ class RobotInterface:
 
     def get_pose(self):
         """Returns current x, y, heading (h)."""
-        return {"x": pose.x, "y": pose.y, "h": pose.h}
+        return {"x": pose.pose[0], "y": pose.pose[1], "h": pose.pose[2]}
 
     def get_odometry(self):
         """Returns trip distance (tripB) and trip heading change (tripBh)."""

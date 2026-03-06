@@ -1,7 +1,7 @@
 # tasks/drive_one_meter.py
 
 from tasks.base_task import BaseTask, TaskStatus
-from spose import pose
+from mqtt_python.spose import pose
 import time
 
 
@@ -15,7 +15,6 @@ class DriveOneMeterTask(BaseTask):
     def start(self):
         super().start()
         print("[TASK] DriveOneMeter started")
-        pose.tripBreset()
         self.state = 0
         self.start_time = time.time()
 
@@ -23,7 +22,7 @@ class DriveOneMeterTask(BaseTask):
 
         if self.state == 0:
             # Start driving
-            self.motion_controller.drive_distance(1.0, 0.5)
+            self.motion_controller.drive_distance(1.0, 0.3)
             self.state = 1
 
         elif self.state == 1:
@@ -32,7 +31,7 @@ class DriveOneMeterTask(BaseTask):
 
         elif self.state == 2:
             # Wait until fully stopped
-            if abs(pose.velocity()) < 0.001:
+            if not self.motion_controller.is_busy():
                 print("[TASK] DriveOneMeter completed")
                 return TaskStatus.DONE
 
@@ -40,5 +39,4 @@ class DriveOneMeterTask(BaseTask):
 
     def stop(self):
         super().stop()
-        self.robot.set_led(0, 0, 0)
         print("[TASK] DriveOneMeter stopped")
