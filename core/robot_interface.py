@@ -1,5 +1,5 @@
 # core/robot_interface.py
-from uservice import service
+from mqtt_python.uservice import service
 
 class RobotInterface:
 

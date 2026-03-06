@@ -36,7 +36,7 @@ class SRobot:
 
     def setup(self):
       # data subscription is set in teensy_interface/build/robot.ini
-      from uservice import service
+      from .uservice import service
       loops = 0
       while not service.stop:
         # wait for essential data to arrive
@@ -64,7 +64,7 @@ class SRobot:
         return False
 
     def print(self):
-      from uservice import service
+      from .uservice import service
       print("% Robot hbt " + str(self.hbtTime - service.startTime) +
             f" Bat {self.batVolt:.1f} V," +
             f" {self.hbtInterval:.4f} sec, " +

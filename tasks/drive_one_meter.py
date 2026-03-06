@@ -1,7 +1,7 @@
 # tasks/drive_one_meter.py
 
 from tasks.base_task import BaseTask, TaskStatus
-from spose import pose
+from mqtt_python.spose import pose
 import time
 
 

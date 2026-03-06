@@ -52,6 +52,8 @@ class Localizer(threading.Thread):
         
         if imu.gyroUpdCnt > 0:
             print(f"[Localizer] Gyro z: {imu.gyro[2]:.3f}")
+            print(f"[Localizer] Gyro x: {imu.gyro[0]:.3f}")
+            print(f"[Localizer] Gyro y: {imu.gyro[1]:.3f}")
             self.world.set_imu(self.integrated_heading, imu.gyro[2])
     
     def _update_localized_pose(self):
@@ -74,6 +76,8 @@ class Localizer(threading.Thread):
         # Integrate gyro for heading (if IMU available)
         if imu.gyroUpdCnt > 0:
             gyro_z = imu.gyro[2]
+            gyro_x = imu.gyro[0]
+            gyro_y = imu.gyro[1]
             now = time.time()
             
             if self.last_gyro_time is not None:
@@ -130,4 +134,4 @@ class Localizer(threading.Thread):
                 self.imu_heading_offset = self.integrated_heading - pose.pose[2]
     
     def stop(self):
-        self.running = False
+        self.running = True

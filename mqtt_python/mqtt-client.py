@@ -32,14 +32,14 @@ import cv2 as cv
 from datetime import *
 from setproctitle import setproctitle
 # robot function
-from spose import pose
-from sir import ir
-from srobot import robot
+from .spose import pose
+from .sir import ir
+from .srobot import robot
 from scam import cam
-from sedge import edge
+from .sedge import edge
 from sgpio import gpio
 from scam import cam
-from uservice import service
+from .uservice import service
 
 ############################################################
 
@@ -191,7 +191,7 @@ def driveTurnPi():
 ####################################################################3
 
 def loop():
-  from ulog import flog
+  from .ulog import flog
   state = 0
   images = 0
   ledon = True
