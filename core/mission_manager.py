@@ -1,7 +1,7 @@
 # core/mission_manager.py
 
 import time
-from tasks.drive_one_meter import DriveOneMeterTask
+from tasks.drive_one_left import DriveOneLeftTask
 from tasks.base_task import TaskStatus
 
 
@@ -22,7 +22,7 @@ class MissionManager:
         Define the mission sequence.
         This is where your group defines order of tasks.
         """
-        self.task_queue.append(DriveOneMeterTask(self.world, self.robot))
+        self.task_queue.append(DriveOneLeftTask(self.world, self.robot))
 
     def start_next_task(self):
         if len(self.task_queue) == 0:

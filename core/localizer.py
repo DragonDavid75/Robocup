@@ -5,7 +5,7 @@ import numpy as np
 
 # Set USE_LOCALIZER = True to enable full localization with IMU correction
 # Set to False for simple pose bridge (just copy odometry to WorldModel)
-USE_LOCALIZER = False
+USE_LOCALIZER = True
 
 # Map reference point (where robot starts in world coordinates)
 # Adjust these to match your reference map
@@ -30,6 +30,15 @@ class Localizer(threading.Thread):
         self.imu_heading_offset = 0.0  # set on first IMU reading
         self.integrated_heading = 0.0  # gyro-integrated heading
         self.last_gyro_time = None
+        
+        # IMU-based distance tracking (accelerometer)
+        self.last_acc_time = None
+        self.imu_vel_x = 0.0  # integrated velocity in world frame
+        self.imu_vel_y = 0.0
+        self.imu_pos_x = 0.0  # double-integrated position
+        self.imu_pos_y = 0.0
+        self.acc_offset = [0.0, 0.0, 0.0]  # accelerometer bias (gravity + offset)
+        self.acc_calibrated = False
         
     def run(self):
         while self.running:
@@ -106,6 +115,39 @@ class Localizer(threading.Thread):
         else:
             corrected_h = odom_h
         
+        # IMU-based distance calculation (accelerometer double integration)
+        if imu.accUpdCnt > 0:
+            now = time.time()
+            
+            # Calibrate accelerometer offset on first readings (assume robot stationary)
+            if not self.acc_calibrated and pose.poseCnt > 5:
+                self.acc_offset = [imu.acc[0], imu.acc[1], imu.acc[2]]
+                self.acc_calibrated = True
+                print(f"[Localizer] IMU acc calibrated: offset={self.acc_offset}")
+            
+            if self.acc_calibrated and self.last_acc_time is not None:
+                dt = now - self.last_acc_time
+                
+                # Remove offset (gravity component) and get linear acceleration
+                acc_x = imu.acc[0] - self.acc_offset[0]
+                acc_y = imu.acc[1] - self.acc_offset[1]
+                
+                # Rotate to world frame using heading
+                acc_world_x = acc_x * np.cos(corrected_h) - acc_y * np.sin(corrected_h)
+                acc_world_y = acc_x * np.sin(corrected_h) + acc_y * np.cos(corrected_h)
+                
+                # Integrate acceleration to get velocity
+                self.imu_vel_x += acc_world_x * dt
+                self.imu_vel_y += acc_world_y * dt
+                
+                # Integrate velocity to get position
+                self.imu_pos_x += self.imu_vel_x * dt
+                self.imu_pos_y += self.imu_vel_y * dt
+                
+                print(f"[Localizer] IMU dist: acc=({acc_x:.3f},{acc_y:.3f}), vel=({self.imu_vel_x:.3f},{self.imu_vel_y:.3f}), pos=({self.imu_pos_x:.3f},{self.imu_pos_y:.3f})")
+            
+            self.last_acc_time = now
+        
         # Apply map offset (transform from odometry to map coordinates)
         map_x = odom_x + MAP_OFFSET_X
         map_y = odom_y + MAP_OFFSET_Y
@@ -121,6 +163,11 @@ class Localizer(threading.Thread):
         self.last_odom_h = h
         self.imu_heading_offset = 0.0
         self.integrated_heading = 0.0
+        self.imu_vel_x = 0.0
+        self.imu_vel_y = 0.0
+        self.imu_pos_x = 0.0
+        self.imu_pos_y = 0.0
+        self.acc_calibrated = False
     
     def calibrate_imu_offset(self):
         """Recalibrate IMU heading offset (call when robot is stationary and facing known direction)"""
