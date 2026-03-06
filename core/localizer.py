@@ -5,7 +5,7 @@ import numpy as np
 
 # Set USE_LOCALIZER = True to enable full localization with IMU correction
 # Set to False for simple pose bridge (just copy odometry to WorldModel)
-USE_LOCALIZER = True
+USE_LOCALIZER = False
 
 # Map reference point (where robot starts in world coordinates)
 # Adjust these to match your reference map
@@ -44,17 +44,22 @@ class Localizer(threading.Thread):
         from mqtt_python.spose import pose
         from mqtt_python.simu import imu
         
+        print(f"[Localizer] poseCnt: {pose.poseCnt}, gyroUpdCnt: {imu.gyroUpdCnt}")
+        
         if pose.poseCnt > 0:
+            print(f"[Localizer] Pose: x={pose.pose[0]:.3f}, y={pose.pose[1]:.3f}, h={pose.pose[2]:.3f}")
             self.world.set_pose(pose.pose[0], pose.pose[1], pose.pose[2])
         
         if imu.gyroUpdCnt > 0:
-            # Use gyro z for heading rate, acc for potential tilt correction
+            print(f"[Localizer] Gyro z: {imu.gyro[2]:.3f}")
             self.world.set_imu(self.integrated_heading, imu.gyro[2])
     
     def _update_localized_pose(self):
         """Dead reckoning with IMU heading correction"""
         from mqtt_python.spose import pose
         from mqtt_python.simu import imu
+        
+        print(f"[Localizer] poseCnt: {pose.poseCnt}, gyroUpdCnt: {imu.gyroUpdCnt}")
         
         # Get odometry from Teensy
         if pose.poseCnt == 0:
@@ -63,6 +68,8 @@ class Localizer(threading.Thread):
         odom_x = pose.pose[0]
         odom_y = pose.pose[1]
         odom_h = pose.pose[2]
+        
+        print(f"[Localizer] Odometry: x={odom_x:.3f}, y={odom_y:.3f}, h={odom_h:.3f}")
         
         # Integrate gyro for heading (if IMU available)
         if imu.gyroUpdCnt > 0:
@@ -98,6 +105,8 @@ class Localizer(threading.Thread):
         # Apply map offset (transform from odometry to map coordinates)
         map_x = odom_x + MAP_OFFSET_X
         map_y = odom_y + MAP_OFFSET_Y
+        
+        print(f"[Localizer] Map coords: x={map_x:.3f}, y={map_y:.3f}, h={corrected_h:.3f}")
         
         self.world.set_pose(map_x, map_y, corrected_h)
     
