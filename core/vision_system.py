@@ -2,8 +2,8 @@
 import threading
 import time
 import cv2 as cv
-from scam import cam
-from sedge import edge
+from mqtt_python.scam import cam
+from mqtt_python.sedge import edge
 
 class VisionSystem(threading.Thread):
 

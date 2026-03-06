@@ -25,19 +25,6 @@ class WorldModel:
         self.ir_values = []
         self.image = None
 
-        # --- Commands ---
-        self.desired_velocity = 0.0
-        self.desired_turnrate = 0.0
-
         # --- Mission state ---
         self.current_task = None
         self.mission_state = "IDLE"
-
-    def set_motion(self, v, w):
-        with self.lock:
-            self.desired_velocity = v
-            self.desired_turnrate = w
-
-    def get_motion(self):
-        with self.lock:
-            return self.desired_velocity, self.desired_turnrate

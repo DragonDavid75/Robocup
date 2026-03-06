@@ -10,7 +10,7 @@ robot = RobotInterface()
 
 motion = MotionController(world, robot)
 vision = VisionSystem(world)
-mission = MissionManager(world, robot)
+mission = MissionManager(world, motion)
 
 motion.start()
 vision.start()
