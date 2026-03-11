@@ -18,7 +18,7 @@ class DriveOneLeftTask(BaseTask):
         super().start()
         print("[TASK] DriveOneLeft started")
         pose.tripBreset()
-        self.robot.set_led(0, 100, 0)  # green
+        self.robot.set_led(0, 100, 0, 0)  # green
         self.state = 0
         self.start_time = time.time()
 
@@ -83,5 +83,5 @@ class DriveOneLeftTask(BaseTask):
 
     def stop(self):
         super().stop()
-        self.robot.set_led(0, 0, 0)
+        self.robot.set_led(0, 0, 0, 0)
         print("[TASK] DriveOneLeft stopped")
