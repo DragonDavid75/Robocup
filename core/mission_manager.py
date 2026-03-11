@@ -4,15 +4,14 @@ import time
 from tasks.drive_one_left import DriveOneLeftTask
 from tasks.drive_one_meter import DriveOneMeterTask
 from tasks.drive_to_roundabout import DriveToRoundaboutTask
-from tasks.turn_in_place import TurnInPlaceTask
 from tasks.base_task import TaskStatus
 
 
 class MissionManager:
 
-    def __init__(self, world, motion_controller):
+    def __init__(self, world, robot):
         self.world = world
-        self.motion_controller = motion_controller
+        self.robot = robot
         self.current_task = None
         self.task_queue = []
         self.running = True
