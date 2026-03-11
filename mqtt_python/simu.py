@@ -100,7 +100,7 @@ class SImu:
             else:
               self.gyroInterval = (self.gyroInterval * 99 + (t1 -t0).total_seconds()) / 100
             self.gyroUpdCnt += 1
-            # self.print()
+            self.print()
         elif topic == "T0/acc":
           gg = msg.split(" ")
           if (len(gg) >= 4):
@@ -115,7 +115,7 @@ class SImu:
             else:
                self.accInterval = (self.accInterval * 99 + (t1 -t0).total_seconds()) / 100
             self.accUpdCnt += 1
-            # self.print()
+            self.print()
         else:
           used = False
         return used
