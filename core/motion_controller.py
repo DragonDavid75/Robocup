@@ -1,6 +1,7 @@
 # core/motion_controller.py
 import threading
 import time
+import math
 from mqtt_python.uservice import service
 from mqtt_python.sedge import edge
 
@@ -26,8 +27,6 @@ class MotionController(threading.Thread):
                 self._handle_drive_distance_mission()
             elif self.current_task == 'servo_control':
                 self._handle_servo_control()
-            elif self.current_task == 'drive_circle':
-                self._handle_drive_circle_mission()   
             elif service.stop:
                 print("% MotionController: Emergency stop activated!")
                 self.stop()
@@ -68,19 +67,23 @@ class MotionController(threading.Thread):
 
     def _handle_drive_distance_mission(self):
         """Logic for driving a specific distance."""
-        current_dist = self.robot.get_odometry()["dist"]
+        current_pos = world.get_pose()
+        start_pos = self.task_params.get("start_pos", 0)
+        dist_traveled = self.task_params.get("dist_traveled", 0)
+        dist_traveled += math.dist(start_pos, current_pos)
         target_distance = self.task_params.get("target_distance", 0)
-        velocity = self.task_params.get("velocity", 0)
+
+        self.trask_params["dist_traveled"] = dist_traveled
 
         # print(f"% MotionController: Driving distance - current: {current_dist:.2f} m, target: {target_distance:.2f} m")
 
-        if current_dist >= target_distance:
+        if dist_traveled >= target_distance:
             print("% MotionController: Drive distance complete.")
             self.robot.stop()
             self.current_task = None
         else:
             # Maintain the drive command
-           pass
+            pass
 
     def _handle_turn_mission(self):
         """Logic for turning in place to a relative heading."""
@@ -97,15 +100,6 @@ class MotionController(threading.Thread):
             # Maintain the turn command
             pass
 
-    def _handle_drive_circle_mission(self):
-        start_time = self.task_params.get("start_time", 0)
-        duration = self.task_params.get("duration", 0)        
-
-        if time.time() - start_time >= duration:
-            print("% MotionController: Circle drive complete.")
-            self.robot.stop()
-            self.current_task = None
-
     def _handle_servo_control(self):
         """Logic for direct servo control."""
         idx = self.task_params.get("servo_idx", 0)
@@ -115,6 +109,7 @@ class MotionController(threading.Thread):
         self.current_task = None # Assume servo command is instantaneous for simplicity
 
     # --- High Level Commands for Mission Logic ---
+
     def follow_until_intersection_or_end_line(self, velocity, left_side=True, ref_pos=0.0):
         """Follows the line and stops automatically at a cross-line."""
         print(f"% MotionController: Following line at {velocity} m/s")
@@ -134,8 +129,9 @@ class MotionController(threading.Thread):
         """Drives a specific distance in meters."""
         print(f"% MotionController: Driving {distance} meters at {velocity} m/s")
         self.robot.set_line_control(0, False) # Ensure line follow is off
-        self.robot.reset_trip()
-        self.task_params["target_distance"] = distance * self.distance_ratio
+        self.task_params["start_pos"] = world.get_pose()
+        self.task_params["dist_traveled"] = 0
+        self.task_params["target_distance"] = distance
         self.task_params["velocity"] = velocity
         self.current_task = 'drive_distance'
 
@@ -152,16 +148,7 @@ class MotionController(threading.Thread):
         # Negative angle = turn right (negative angular velocity)
         turn_speed = 0.5
         self.robot.set_velocity(0, turn_speed)
-    
-    def drive_circle(self, linear_speed, angular_speed, duration):
-    	self.task_params["linear_speed"] = linear_speed
-    	self.task_params["angular_speed"] = angular_speed
-    	self.task_params["duration"] = duration
-    	self.task_params["start_time"] = time.time()
 
-    	self.current_task = "drive_circle"
-    	self.robot.set_velocity(linear_speed, angular_speed)
-    
     def servo_control(self, idx, pos, speed):
         """Direct servo control."""
         self.task_params["servo_idx"] = idx
@@ -176,4 +163,3 @@ class MotionController(threading.Thread):
     def stop(self):
         self.running = False
         self.robot.stop()
-
