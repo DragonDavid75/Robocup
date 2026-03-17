@@ -34,7 +34,7 @@ class SIr:
 
     def setup(self):
       # data subscription is set in teensy_interface/build/robot.ini
-      from .uservice import service
+      from mqtt_python.uservice import service
       loops = 0
       while not service.stop:
         # wait for data to arrive
@@ -53,7 +53,7 @@ class SIr:
       pass
 
     def print(self):
-      from .uservice import service
+      from mqtt_python.uservice import service
       print("% IR dist " + str(self.accTime - service.startTime) + " (" +
             str(self.ir[0]) + ", " +
             str(self.ir[1]) + ", " +

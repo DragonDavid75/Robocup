@@ -35,14 +35,14 @@ from paho.mqtt import client as mqtt_client
 from datetime import *
 from threading import Thread
 #
-from .simu import imu
-from .spose import pose
-from .sir import ir
-from .srobot import robot
-from .scam import cam
-from .sedge import edge
-from .sgpio import gpio
-from .ulog import flog
+from mqtt_python.spose import pose
+from mqtt_python.sir import ir
+from mqtt_python.srobot import robot
+from mqtt_python.scam import cam
+from mqtt_python.sedge import edge
+from mqtt_python.sgpio import gpio
+from mqtt_python.ulog import flog
+from mqtt_python.simu import imu
 import psutil
 
 class UService:
@@ -75,7 +75,7 @@ class UService:
   def setup(self, mqtt_host):
     #
     print(self.startTime.strftime("Started %Y-%m-%d %H:%M:%S.%f"))
-    from .ulog import flog
+    from mqtt_python.ulog import flog
     flog.setup()
     self.host = mqtt_host
     self.parser.add_argument('-w', '--white', action='store_true',
@@ -308,7 +308,7 @@ class UService:
     return False
 
   def terminate(self):
-    from .ulog import flog
+    from mqtt_python.ulog import flog
     if self.terminating:
       return
     if not self.connected:

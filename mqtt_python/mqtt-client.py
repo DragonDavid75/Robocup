@@ -32,14 +32,14 @@ import cv2 as cv
 from datetime import *
 from setproctitle import setproctitle
 # robot function
-from .spose import pose
-from .sir import ir
-from .srobot import robot
-from scam import cam
-from .sedge import edge
-from sgpio import gpio
-from scam import cam
-from .uservice import service
+from mqtt_python.spose import pose
+from mqtt_python.sir import ir
+from mqtt_python.srobot import robot
+from mqtt_python.scam import cam
+from mqtt_python.sedge import edge
+from mqtt_python.sgpio import gpio
+from mqtt_python.scam import cam
+from mqtt_python.uservice import service
 
 ############################################################
 
@@ -191,7 +191,7 @@ def driveTurnPi():
 ####################################################################3
 
 def loop():
-  from .ulog import flog
+  from ulog import flog
   state = 0
   images = 0
   ledon = True

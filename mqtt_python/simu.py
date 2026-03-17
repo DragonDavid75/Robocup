@@ -39,7 +39,7 @@ class SImu:
 
     def setup(self):
       # data subscription is set in teensy_interface/build/robot.ini
-      from .uservice import service
+      from mqtt_python.uservice import service
       loops = 0
       while not service.stop:
         t.sleep(0.01)
@@ -71,7 +71,7 @@ class SImu:
       pass
 
     def print(self):
-      from .uservice import service
+      from mqtt_python.uservice import service
       print("% IMU acc  " + str(self.accTime - service.startTime) + " (" +
             str(self.acc[0]) + ", " +
             str(self.acc[1]) + ", " +
