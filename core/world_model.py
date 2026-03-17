@@ -65,3 +65,7 @@ class WorldModel:
     def get_imu(self):
         with self.lock:
             return self.imu_heading, self.imu_gyro_z
+
+    def get_velocity(self):
+        with self.lock:
+            return self.velocity
