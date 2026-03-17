@@ -28,3 +28,35 @@ class WorldModel:
         # --- Mission state ---
         self.current_task = None
         self.mission_state = "IDLE"
+
+    def set_pose(self, x, y, h):
+        with self.lock:
+            self.pose_x = x
+            self.pose_y = y
+            self.pose_h = h
+
+    def set_imu(self, heading, gyro_z):
+        with self.lock:
+            self.imu_heading = heading
+            self.imu_gyro_z = gyro_z
+
+    def set_motion(self, v, w):
+        with self.lock:
+            self.desired_velocity = v
+            self.desired_turnrate = w
+
+    def get_motion(self):
+        with self.lock:
+            return self.desired_velocity, self.desired_turnrate
+
+    def get_pose(self):
+        with self.lock:
+            return self.pose_x, self.pose_y, self.pose_h
+
+    def get_imu(self):
+        with self.lock:
+            return self.imu_heading, self.imu_gyro_z
+
+    def get_velocity(self):
+        with self.lock:
+            return self.velocity

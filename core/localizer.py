@@ -53,24 +53,16 @@ class Localizer(threading.Thread):
         from mqtt_python.spose import pose
         from mqtt_python.simu import imu
         
-        print(f"[Localizer] poseCnt: {pose.poseCnt}, gyroUpdCnt: {imu.gyroUpdCnt}")
-        
         if pose.poseCnt > 0:
-            print(f"[Localizer] Pose: x={pose.pose[0]:.3f}, y={pose.pose[1]:.3f}, h={pose.pose[2]:.3f}")
             self.world.set_pose(pose.pose[0], pose.pose[1], pose.pose[2])
         
         if imu.gyroUpdCnt > 0:
-            print(f"[Localizer] Gyro z: {imu.gyro[2]:.3f}")
-            print(f"[Localizer] Gyro x: {imu.gyro[0]:.3f}")
-            print(f"[Localizer] Gyro y: {imu.gyro[1]:.3f}")
             self.world.set_imu(self.integrated_heading, imu.gyro[2])
     
     def _update_localized_pose(self):
         """Dead reckoning with IMU heading correction"""
         from mqtt_python.spose import pose
         from mqtt_python.simu import imu
-        
-        print(f"[Localizer] poseCnt: {pose.poseCnt}, gyroUpdCnt: {imu.gyroUpdCnt}")
         
         # Get odometry from Teensy
         if pose.poseCnt == 0:
@@ -79,8 +71,6 @@ class Localizer(threading.Thread):
         odom_x = pose.pose[0]
         odom_y = pose.pose[1]
         odom_h = pose.pose[2]
-        
-        print(f"[Localizer] Odometry: x={odom_x:.3f}, y={odom_y:.3f}, h={odom_h:.3f}")
         
         # Integrate gyro for heading (if IMU available)
         if imu.gyroUpdCnt > 0:
@@ -123,7 +113,6 @@ class Localizer(threading.Thread):
             if not self.acc_calibrated and pose.poseCnt > 5:
                 self.acc_offset = [imu.acc[0], imu.acc[1], imu.acc[2]]
                 self.acc_calibrated = True
-                print(f"[Localizer] IMU acc calibrated: offset={self.acc_offset}")
             
             if self.acc_calibrated and self.last_acc_time is not None:
                 dt = now - self.last_acc_time
@@ -143,16 +132,12 @@ class Localizer(threading.Thread):
                 # Integrate velocity to get position
                 self.imu_pos_x += self.imu_vel_x * dt
                 self.imu_pos_y += self.imu_vel_y * dt
-                
-                print(f"[Localizer] IMU dist: acc=({acc_x:.3f},{acc_y:.3f}), vel=({self.imu_vel_x:.3f},{self.imu_vel_y:.3f}), pos=({self.imu_pos_x:.3f},{self.imu_pos_y:.3f})")
             
             self.last_acc_time = now
         
         # Apply map offset (transform from odometry to map coordinates)
         map_x = odom_x + MAP_OFFSET_X
         map_y = odom_y + MAP_OFFSET_Y
-        
-        print(f"[Localizer] Map coords: x={map_x:.3f}, y={map_y:.3f}, h={corrected_h:.3f}")
         
         self.world.set_pose(map_x, map_y, corrected_h)
     
