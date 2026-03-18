@@ -22,7 +22,8 @@ class TurnInPlaceTask(BaseTask):
 
         if self.state == 0:
             # Start turning
-            self.motion_controller.turn_in_place(1.57)  # 90 degrees
+            self.motion_controller.servo_control(1, -800, 300)  # Example servo control
+            self.motion_controller.turn_in_place(1.57 * 4)
             self.state = 1
 
         elif self.state == 1:

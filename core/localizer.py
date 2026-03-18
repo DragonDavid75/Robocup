@@ -101,7 +101,7 @@ class Localizer(threading.Thread):
             # Normalize heading to [-pi, pi]
             corrected_h = np.arctan2(np.sin(corrected_h), np.cos(corrected_h))
             
-            self.world.set_imu(imu_heading, gyro_z)
+            self.world.set_imu(np.deg2rad(imu_heading), gyro_z)
         else:
             corrected_h = odom_h
         
@@ -166,4 +166,4 @@ class Localizer(threading.Thread):
                 self.imu_heading_offset = self.integrated_heading - pose.pose[2]
     
     def stop(self):
-        self.running = True
+        self.running = False

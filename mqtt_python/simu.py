@@ -72,16 +72,16 @@ class SImu:
 
     def print(self):
       from mqtt_python.uservice import service
-      print("% IMU acc  " + str(self.accTime - service.startTime) + " (" +
-            str(self.acc[0]) + ", " +
-            str(self.acc[1]) + ", " +
-            str(self.acc[2]) + f") {self.gyroInterval:.4f} sec " +
-            str(self.accUpdCnt))
-      print("% IMU gyro " + str(self.gyroTime - service.startTime) + " (" +
-            str(self.gyro[0]) + ", " +
-            str(self.gyro[1]) + ", " +
-            str(self.gyro[2]) + f") {self.accInterval:.4f} sec " +
-            str(self.gyroUpdCnt))
+      # print("% IMU acc  " + str(self.accTime - service.startTime) + " (" +
+      #       str(self.acc[0]) + ", " +
+      #       str(self.acc[1]) + ", " +
+      #       str(self.acc[2]) + f") {self.gyroInterval:.4f} sec " +
+      #       str(self.accUpdCnt))
+      # print("% IMU gyro " + str(self.gyroTime - service.startTime) + " (" +
+      #       str(self.gyro[0]) + ", " +
+      #       str(self.gyro[1]) + ", " +
+      #       str(self.gyro[2]) + f") {self.accInterval:.4f} sec " +
+      #       str(self.gyroUpdCnt))
 
     def decode(self, topic, msg):
         # decode MQTT message

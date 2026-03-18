@@ -89,7 +89,7 @@ class SPose:
           ## send robot configuration
           # confw rl rr g t wb Set configuration 
           #     radius (left,right (m)), gear, encTick, wheelbase (m)
-          service.send("robobot/cmd/T0","confw 0.074 0.074 19 92 0.23")
+          service.send("robobot/cmd/T0","confw 0.074 0.074 19 68 0.23")
           # encoder reversed (motortest only)
           # service.send("robobot/cmd/T0/encrev","1")
           # request new configuration from Teensy

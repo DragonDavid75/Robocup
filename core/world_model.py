@@ -17,6 +17,8 @@ class WorldModel:
         self.pose_h = 0.0
         self.velocity = 0.0
         self.turnrate = 0.0
+        self.imu_heading = 0.0
+        self.imu_gyro_z = 0.0
 
         # --- Sensors ---
         self.line_detected = False
@@ -39,11 +41,6 @@ class WorldModel:
         with self.lock:
             self.imu_heading = heading
             self.imu_gyro_z = gyro_z
-
-    def set_motion(self, v, w):
-        with self.lock:
-            self.desired_velocity = v
-            self.desired_turnrate = w
 
     def get_motion(self):
         with self.lock:

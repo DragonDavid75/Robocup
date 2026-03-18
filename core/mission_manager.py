@@ -2,15 +2,15 @@
 
 import time
 from tasks.drive_one_meter import DriveOneMeterTask
-from tasks.drive_to_roundabout import DriveToRoundaboutTask
+from tasks.drive_one_meter_on_line import DriveOneMeterOnLineTask
+from tasks.turn_in_place import TurnInPlaceTask
 from tasks.base_task import TaskStatus
-from tasks.DriveCircle import DriveCircleTask
 
 class MissionManager:
 
-    def __init__(self, world, robot):
+    def __init__(self, world, motion_controller):
         self.world = world
-        self.robot = robot
+        self.motion_controller = motion_controller
         self.current_task = None
         self.task_queue = []
         self.running = True
@@ -23,8 +23,8 @@ class MissionManager:
         Define the mission sequence.
         This is where your group defines order of tasks.
         """
-        self.task_queue.append(DriveCircleTask(self.world, self.motion_controller))
         # self.task_queue.append(DriveOneMeterTask(self.world, self.motion_controller))
+        self.task_queue.append(DriveOneMeterOnLineTask(self.world, self.motion_controller))
         # self.task_queue.append(TurnInPlaceTask(self.world, self.motion_controller))
 
     def start_next_task(self):

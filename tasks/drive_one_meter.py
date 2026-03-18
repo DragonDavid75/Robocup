@@ -22,7 +22,7 @@ class DriveOneMeterTask(BaseTask):
 
         if self.state == 0:
             # Start driving
-            self.motion_controller.drive_distance(0.1, 0.3)
+            self.motion_controller.drive_distance(1, 0.2)
             self.state = 1
 
         elif self.state == 1:

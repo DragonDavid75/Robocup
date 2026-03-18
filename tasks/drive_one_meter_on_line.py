@@ -18,29 +18,22 @@ class DriveOneMeterOnLineTask(BaseTask):
 
     def update(self):
         if self.state == 0:
-            # 1. Start following the line
-            self.motion_controller.follow_for_distance(1.0, 0.3, left_side=True, ref_pos=0.0)
+            # Start following the line
+            self.motion_controller.follow_for_distance(150.0, 0.2, left_side=False, ref_pos=0.0)
             self.state = 1
 
         elif self.state == 1:
-            # 2. Wait for line following to finish
             if not self.motion_controller.is_busy():
-                # Line ended, now start driving into roundabout
                 self.state = 2
 
-        elif self.state == 2:
-            # 3. Wait for the distance drive to finish
-            if not self.motion_controller.is_busy():
-                self.state = 3
-
         elif self.state == 3:
-            # 4. Wait until fully stopped
-            if abs(pose.velocity()) < 0.001:
-                print("[TASK] DriveToRoundabout completed")
+            # Wait until fully stopped
+            if not self.motion_controller.is_busy():
+                print("[TASK] DriveOneMeterOnLine completed")
                 return TaskStatus.DONE
 
         return TaskStatus.RUNNING
 
     def stop(self):
         super().stop()
-        print("[TASK] DriveToRoundabout stopped")
+        print("[TASK] DriveOneMeterOnLine stopped")
