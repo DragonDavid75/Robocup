@@ -9,7 +9,8 @@ import time
 from mqtt_python.uservice import service
 
 world = WorldModel()
-robot = RobotInterface()
+#robot = RobotInterface()
+robot = RobotInterface(host='10.197.219.91')
 
 motion = MotionController(world, robot)
 vision = VisionSystem(world)

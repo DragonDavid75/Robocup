@@ -5,6 +5,7 @@ from tasks.drive_one_meter import DriveOneMeterTask
 from tasks.drive_one_meter_on_line import DriveOneMeterOnLineTask
 from tasks.turn_in_place import TurnInPlaceTask
 from tasks.base_task import TaskStatus
+from tasks.handle_ball_alignment_mission import AlignToBallTask
 
 class MissionManager:
 
@@ -24,8 +25,9 @@ class MissionManager:
         This is where your group defines order of tasks.
         """
         # self.task_queue.append(DriveOneMeterTask(self.world, self.motion_controller))
-        self.task_queue.append(DriveOneMeterOnLineTask(self.world, self.motion_controller))
+        #self.task_queue.append(DriveOneMeterOnLineTask(self.world, self.motion_controller))
         # self.task_queue.append(TurnInPlaceTask(self.world, self.motion_controller))
+        self.task_queue.append(AlignToBallTask(self.world, self.motion_controller, color="red"))
 
     def start_next_task(self):
         if len(self.task_queue) == 0:

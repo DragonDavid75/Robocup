@@ -28,7 +28,9 @@ class MotionController(threading.Thread):
             elif self.current_task == 'servo_control':
                 self._handle_servo_control()
             elif self.current_task == 'drive_circle':
-                self._handle_drive_circle_mission()   
+                self._handle_drive_circle_mission()  
+            elif self.current_task == 'align_to_ball':
+                self._handle_ball_alignment_mission() 
             elif service.stop:
                 print("% MotionController: Emergency stop activated!")
                 self.stop()
@@ -121,7 +123,69 @@ class MotionController(threading.Thread):
             self.robot.stop()
             self.current_task = None
 
+    def turn_in_place(self, angle_rad):
+        """Turns the robot by a specific amount of radians."""
+        self.robot.set_line_control(0, False) # Ensure line follow is off
+        current_h = self.world.get_imu()[0]
+        self.task_params["target_angle"] = current_h + angle_rad
+        self.current_task = 'turn'
 
+        # Positive angle = turn left (positive angular velocity)
+        # Negative angle = turn right (negative angular velocity)
+        turn_speed = 0.5
+        self.robot.set_velocity(0.3, turn_speed)
+
+    def align_to_ball(self, color):
+        """Starts the alignment and approach mission."""
+        self.robot.set_line_control(0, False) 
+        self.task_params["target_color"] = color 
+        self.task_params["stage"] = "centering" # Start by centering X
+        self.current_task = 'align_to_ball'
+        print(f"% MotionController: Mission Started - Tracking {color} ball")
+
+    def _handle_ball_alignment_mission(self):
+        """Handles both centering and approaching the closest ball of ANY color."""
+        stage = self.task_params.get("stage", "centering")
+        
+        # 1. Get all vision data
+        vision_data = self.world.get_vision_balls() 
+        
+        # 2. Combine all balls from every color into a single list
+        all_detected_balls = []
+        for color_list in vision_data.values():
+            all_detected_balls.extend(color_list)
+
+        # 3. If no balls are seen at all, spin slowly to search
+        if not all_detected_balls:
+            self.robot.set_velocity(0, 0.1)
+            return
+
+        # 4. Find the closest ball overall (using index 2, which is Manhattan Distance)
+        closest_ball = min(all_detected_balls, key=lambda b: b[2])
+        ball_x, ball_y = closest_ball[0], closest_ball[1]
+
+        # --- STAGE 1: Centering ---
+        if stage == "centering":
+            if 400 <= ball_x <= 440:
+                print(f"% MotionController: Closest ball centered at X={ball_x}. Approaching.")
+                self.task_params["stage"] = "approach"
+                self.robot.stop()
+            else:
+                ang_vel = 0.1 if ball_x < 420 else -0.1
+                self.robot.set_velocity(0, ang_vel)
+
+        # --- STAGE 2: Approaching ---
+        elif stage == "approach":
+            ang_vel = 0.0
+            if ball_x < 410: ang_vel = 0.05
+            elif ball_x > 430: ang_vel = -0.05
+            
+            if ball_y >= 330:
+                print(f"% MotionController: Reached ball at Y={ball_y}. Mission Complete.")
+                self.robot.stop()
+                self.current_task = None 
+            else:
+                self.robot.set_velocity(0.1, ang_vel)
 
     def _handle_servo_control(self):
         """Logic for direct servo control."""

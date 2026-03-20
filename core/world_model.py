@@ -26,6 +26,8 @@ class WorldModel:
         self.line_right = 0.0
         self.ir_values = []
         self.image = None
+        # ADD THIS LINE:
+        self.vision_balls = {"blue": [], "red": [], "white": [], "green": []}
 
         # --- Mission state ---
         self.current_task = None
@@ -57,3 +59,7 @@ class WorldModel:
     def get_velocity(self):
         with self.lock:
             return self.velocity
+    def get_vision_balls(self):
+        """Returns the latest detected balls dictionary safely."""
+        with self.lock:
+            return self.vision_balls
