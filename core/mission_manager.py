@@ -1,10 +1,12 @@
 # core/mission_manager.py
 
 import time
+from tasks.base_task import TaskStatus
 from tasks.drive_one_meter import DriveOneMeterTask
 from tasks.drive_one_meter_on_line import DriveOneMeterOnLineTask
 from tasks.turn_in_place import TurnInPlaceTask
-from tasks.base_task import TaskStatus
+from tasks.follow_line import FollowLineTask
+from tasks.bonus_time import BonusTimeTask
 
 class MissionManager:
 
@@ -26,6 +28,8 @@ class MissionManager:
         # self.task_queue.append(DriveOneMeterTask(self.world, self.motion_controller))
         self.task_queue.append(DriveOneMeterOnLineTask(self.world, self.motion_controller))
         # self.task_queue.append(TurnInPlaceTask(self.world, self.motion_controller))
+        # self.task_queue.append(FollowLineTask(self.world, self.motion_controller))
+        # self.task_queue.append(BonusTimeTask(self.world, self.motion_controller))
 
     def start_next_task(self):
         if len(self.task_queue) == 0:

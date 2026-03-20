@@ -10,12 +10,13 @@ from mqtt_python.uservice import service
 
 world = WorldModel()
 robot = RobotInterface()
+line_follower = LineFollower()
 
-motion = MotionController(world, robot)
+motion = MotionController(world, robot, line_follower)
+servo = ServoController(robot)
 vision = VisionSystem(world)
 mission = MissionManager(world, motion)
 localizer = Localizer(world)
-line_follower = LineFollower()
 
 motion.start()
 vision.start()

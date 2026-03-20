@@ -9,9 +9,9 @@ class LineFollower(threading.Thread):
         self.active = False  # Set to True when you want the robot to drive
         
         # --- PID Tuning Parameters ---
-        self.Kp = 1.0
+        self.Kp = 0.7
         self.Ki = 0.05
-        self.Kd = 0.1
+        self.Kd = 0.2
         
         # --- State Variables for PID ---
         self.integral_error = 0.0
@@ -27,7 +27,7 @@ class LineFollower(threading.Thread):
         
         # Control targets
         self.target_speed = 0.0
-        self.target_position = 0.0  # 0.0 is dead center
+        self.target_position = 0.0
         
     def run(self):
         """Main thread loop, runs constantly at ~100Hz"""
@@ -54,6 +54,7 @@ class LineFollower(threading.Thread):
             
         # Avoid division by zero if the line is completely lost
         if total_sensor_value == 0:
+            print("LineFollower: Warning - Line lost! No valid sensor readings.")
             return None 
             
         return weighted_sum / total_sensor_value
@@ -68,13 +69,18 @@ class LineFollower(threading.Thread):
         
         if current_position is None:
             # Line is lost. You could add logic here to spin and search.
+            print("LineFollower: Line lost! Stopping robot.")
             return
+
+        print(f"LineFollower: Current Position = {current_position:.2f}")
             
         # 2. Calculate time elapsed (dt)
         current_time = time.time()
         dt = current_time - self.last_time
         if dt <= 0.0:
             dt = 0.001 # Prevent divide-by-zero on extremely fast loops
+
+        print(f"LineFollower: Time since last update = {dt:.3f} seconds")
             
         # 3. Calculate Error
         error = self.target_position - current_position
@@ -87,6 +93,8 @@ class LineFollower(threading.Thread):
         # Clamp the integral so it doesn't grow infinitely
         self.integral_error = max(min(self.integral_error, self.max_integral), -self.max_integral)
         I_out = self.Ki * self.integral_error
+
+        print(f"LineFollower: PID Components -> P: {P_out:.3f}, I: {I_out:.3f}, D: (calculated next)")
         
         # 6. Derivative Term
         derivative = (error - self.last_error) / dt
@@ -101,6 +109,7 @@ class LineFollower(threading.Thread):
         # 8. Send MQTT Command
         # Format: "rc {velocity} {turn_rate} {timestamp}"
         command = f"rc {self.target_speed:.3f} {turn_rate:.3f} {current_time}"
+        print(f"LineFollower: Sending command -> {command}")
         service.send("robobot/cmd/ti", command)
         
         # Save state for the next loop iteration
@@ -113,9 +122,11 @@ class LineFollower(threading.Thread):
         self.integral_error = 0.0 # Reset integral when starting
         self.last_time = time.time()
         self.active = True
+        print("LineFollower: Started following line at speed", speed)
         
     def stop_following(self):
         """Pauses the controller without killing the thread"""
+        print("LineFollower: Stopped following line")
         self.active = False
         
     def stop(self):
