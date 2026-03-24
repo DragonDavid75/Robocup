@@ -1,6 +1,7 @@
 from core.world_model import WorldModel
 from core.robot_interface import RobotInterface
 from core.motion_controller import MotionController
+from core.servo_controller import ServoController
 from core.vision_system import VisionSystem
 from core.mission_manager import MissionManager
 from core.localizer import Localizer
@@ -15,7 +16,7 @@ line_follower = LineFollower()
 motion = MotionController(world, robot, line_follower)
 servo = ServoController(robot)
 vision = VisionSystem(world)
-mission = MissionManager(world, motion)
+mission = MissionManager(world, motion, servo)
 localizer = Localizer(world)
 
 motion.start()

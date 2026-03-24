@@ -7,13 +7,11 @@ import time
 
 class DriveJunctionTurnTask(BaseTask):
 
-    def __init__(self, world, motion_controller, servo_controller, velocity=0.2, left_side=True, ref_pos=0.0, turn_angle=1.57):
+    def __init__(self, world, motion_controller, servo_controller, velocity=0.2, turn_angle=1.57):
         super().__init__(world, motion_controller, servo_controller)
         self.state = 0
         self.distance = distance
         self.velocity = velocity
-        self.left_side = left_side
-        self.ref_pos = ref_pos
         self.turn_angle = turn_angle
 
     def start(self):
@@ -24,7 +22,7 @@ class DriveJunctionTurnTask(BaseTask):
     def update(self):
         if self.state == 0:
             # Start following the line
-            self.motion_controller.follow_until_intersection_or_end_line(self.velocity, self.left_side, self.ref_pos)
+            self.motion_controller.follow_until_intersection_or_end_line(self.velocity)
             self.state = 1
 
         elif self.state == 1:

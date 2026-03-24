@@ -103,19 +103,19 @@ class MotionController(threading.Thread):
 
     # --- High Level Commands (Called by Main Thread) ---
 
-    def follow_until_intersection_or_end_line(self, velocity, left_side=True, ref_pos=0.0):
+    def follow_until_intersection_or_end_line(self, velocity, action="STRAIGHT"):
         print(f"% MotionController: Following Line at {velocity} m/s")
         self.robot.reset_trip()
-        self.line_follower.start_following(velocity) # Hardware command sent
-        self.current_task = 'line_intersection_or_end' # Thread begins monitoring
+        self.line_follower.start_following(velocity, action)
+        self.current_task = 'line_intersection_or_end'
 
-    def follow_for_distance(self, distance, velocity, left_side=True, ref_pos=0.0):
+    def follow_for_distance(self, distance, velocity, action="STRAIGHT"):
         print(f"% MotionController: Following line for {distance} meters at {velocity} m/s")
         self.task_params["prev_pos"] = self.world.get_pose()
         self.task_params["dist_traveled"] = 0
         self.task_params["target_distance"] = distance * self.distance_ratio
         
-        self.line_follower.start_following(velocity) # Hardware command sent
+        self.line_follower.start_following(velocity, action) # Hardware command sent
         self.current_task = 'line_distance' # Thread begins monitoring
 
     def drive_distance(self, distance, velocity):

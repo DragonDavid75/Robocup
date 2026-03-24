@@ -33,7 +33,7 @@ class ServoController(threading.Thread):
 
     # --- High Level Commands ---
 
-    def set_servo(self, idx, pos, speed, duration):
+    def servo_control(self, idx, pos, speed, duration=0):
         """
         Sends the command immediately from the main thread and 
         tells the background thread to start the wait timer.

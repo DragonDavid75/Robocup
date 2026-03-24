@@ -2,17 +2,17 @@
 
 import time
 from tasks.base_task import TaskStatus
-from tasks.drive_one_meter import DriveOneMeterTask
-from tasks.drive_one_meter_on_line import DriveOneMeterOnLineTask
-from tasks.turn_in_place import TurnInPlaceTask
-from tasks.follow_line import FollowLineTask
-from tasks.bonus_time import BonusTimeTask
+from tasks.base_tasks.drive_dist_line import DriveDistLineTask
+from tasks.base_tasks.small_turn import SmallTurnTask
+from tasks.base_tasks.small_turn import SmallTurnTask
+from tasks.advanced_tasks.bonus_time import BonusTimeTask
 
 class MissionManager:
 
-    def __init__(self, world, motion_controller):
+    def __init__(self, world, motion_controller, servo_controller):
         self.world = world
         self.motion_controller = motion_controller
+        self.servo_controller = servo_controller
         self.current_task = None
         self.task_queue = []
         self.running = True
@@ -25,11 +25,9 @@ class MissionManager:
         Define the mission sequence.
         This is where your group defines order of tasks.
         """
-        # self.task_queue.append(DriveOneMeterTask(self.world, self.motion_controller))
-        self.task_queue.append(DriveOneMeterOnLineTask(self.world, self.motion_controller))
-        # self.task_queue.append(TurnInPlaceTask(self.world, self.motion_controller))
-        # self.task_queue.append(FollowLineTask(self.world, self.motion_controller))
-        # self.task_queue.append(BonusTimeTask(self.world, self.motion_controller))
+        # self.task_queue.append(BonusTimeTask(self.world, self.motion_controller, self.servo_controller))
+        # self.task_queue.append(DriveDistLineTask(self.world, self.motion_controller, self.servo_controller, distance=50.0, velocity=0.4))
+        self.task_queue.append(SmallTurnTask(self.world, self.motion_controller, self.servo_controller, velocity=0.4, action="RIGHT"))
 
     def start_next_task(self):
         if len(self.task_queue) == 0:
