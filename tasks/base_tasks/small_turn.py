@@ -1,4 +1,10 @@
-# tasks/drive_one_meter.py
+"""
+tasks/small_turn.py
+
+This module contains the SmallTurnTask. It positions a servo and uses a directional 
+action parameter (e.g., "STRAIGHT") to help the robot navigate through minor 
+deviations, small gaps, or specific line choices over a set distance.
+"""
 
 from tasks.base_task import BaseTask, TaskStatus
 from mqtt_python.spose import pose

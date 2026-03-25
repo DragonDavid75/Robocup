@@ -1,4 +1,10 @@
-# tasks/drive_one_meter.py
+"""
+tasks/drive_dist_line.py
+
+This module contains the DriveDistLineTask. It positions a servo (e.g., to lower a 
+sensor array) and instructs the robot to follow a line for a specified distance 
+at a set velocity before stopping.
+"""
 
 from tasks.base_task import BaseTask, TaskStatus
 from mqtt_python.spose import pose

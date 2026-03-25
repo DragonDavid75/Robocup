@@ -132,8 +132,8 @@ class MotionController(threading.Thread):
         self.task_params["target_angle"] = current_h + angle_rad
         
         # Positive angle = turn left, Negative angle = turn right
-        turn_speed = 0.5 
-        self.robot.set_velocity(0.3, turn_speed) # Hardware command sent
+        turn_speed = 0.5 if angle_rad > 0 else -0.5
+        self.robot.set_velocity(0.0, turn_speed) # Hardware command sent
         self.current_task = 'turn' # Thread begins monitoring
 
     def drive_circle(self, linear_speed, angular_speed, duration):

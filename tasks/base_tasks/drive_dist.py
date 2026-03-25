@@ -1,4 +1,10 @@
-# tasks/drive_one_meter.py
+"""
+tasks/drive_dist.py
+
+This module contains the DriveDistTask, which executes a basic dead-reckoning 
+movement. It drives the robot straight for a specified distance at a set 
+velocity without utilizing line-following or sensor feedback.
+"""
 
 from tasks.base_task import BaseTask, TaskStatus
 from mqtt_python.spose import pose
