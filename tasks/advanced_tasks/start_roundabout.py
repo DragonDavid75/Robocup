@@ -19,96 +19,118 @@ class StartRoundaboutTask(BaseTask):
 
     def update(self):
 
-        # STATE 0: Follow white line for 1.5 meters
+        # STATE 0: Follow white line until first intersection
         if self.state == 0:
             self.servo_controller.servo_control(1, -800, 300)
-            self.motion_controller.follow_for_distance(1.5, 0.2)
+            self.motion_controller.follow_until_intersection_or_end_line(0.2, action="STRAIGHT")
             self.state = 1
 
-        # STATE 1: Wait for line following to finish
+        # STATE 1: Wait for intersection detection
         elif self.state == 1:
             if not self.motion_controller.is_busy():
-                print("[TASK] Entering roundabout")
+                print("[TASK] Intersection reached, turning left")
                 self.state = 2
 
-        # STATE 2: Enter roundabout with a small right arc
+        # STATE 2: Turn left at intersection
         elif self.state == 2:
+            self.motion_controller.turn_in_place(math.radians(-90))
+            self.state = 3
+
+        # STATE 3: Wait for turn to finish
+        elif self.state == 3:
+            if not self.motion_controller.is_busy():
+                print("[TASK] Turning complete, driving 90 cm")
+                self.state = 4
+
+        # STATE 4: Drive forward 90 cm
+        elif self.state == 4:
+            self.motion_controller.drive_distance(0.90, 0.2)
+            self.state = 5
+
+        # STATE 5: Wait for 90 cm drive to finish
+        elif self.state == 5:
+            if not self.motion_controller.is_busy():
+                print("[TASK] Entering roundabout")
+                self.state = 6
+
+        # STATE 6: Enter roundabout with a small right arc
+        elif self.state == 6:
             self.motion_controller.drive_arc(
                 angle_rad=math.radians(45),
                 radius=0.30,
                 linear_speed=0.09
             )
-            self.state = 3
+            self.state = 7
 
-        # STATE 3: Wait for entry arc to finish
-        elif self.state == 3:
+        # STATE 7: Wait for entry arc to finish
+        elif self.state == 7:
             if not self.motion_controller.is_busy():
                 print("[TASK] Driving on roundabout")
-                self.state = 4
+                self.state = 8
 
-        # STATE 4: Small arc to align on roundabout
-        elif self.state == 4:
+        # STATE 8: Small arc to align on roundabout
+        elif self.state == 8:
             self.motion_controller.drive_arc(
                 angle_rad=math.radians(15),
                 radius=0.30,
                 linear_speed=0.09
             )
-            self.state = 5
-
-        # STATE 5: Wait for alignment arc
-        elif self.state == 5:
-            if not self.motion_controller.is_busy():
-                print("[TASK] First 90° turn on roundabout")
-                self.state = 6
-
-        # STATE 6: First 90° RIGHT turn (follow roundabout)
-        elif self.state == 6:
-            self.motion_controller.drive_arc(
-                angle_rad=-math.radians(90),
-                radius=0.375,
-                linear_speed=0.2
-            )
-            self.state = 7
-
-        # STATE 7: Wait for first 90° turn
-        elif self.state == 7:
-            if not self.motion_controller.is_busy():
-                print("[TASK] Second 90° turn on roundabout")
-                self.state = 8
-
-        # STATE 8: Second 90° RIGHT turn
-        elif self.state == 8:
-            self.motion_controller.drive_arc(
-                angle_rad=-math.radians(90),
-                radius=0.375,
-                linear_speed=0.2
-            )
             self.state = 9
 
-        # STATE 9: Wait for second 90° turn
+        # STATE 9: Wait for alignment arc
         elif self.state == 9:
             if not self.motion_controller.is_busy():
-                print("[TASK] Turning 90° right to exit")
+                print("[TASK] First 90 turn on roundabout")
                 self.state = 10
 
-        # STATE 10: Turn 90° RIGHT to face exit direction
+        # STATE 10: First 90 RIGHT turn (follow roundabout)
         elif self.state == 10:
-            self.motion_controller.turn_in_place(math.radians(90))
+            self.motion_controller.drive_arc(
+                angle_rad=-math.radians(90),
+                radius=0.375,
+                linear_speed=0.2
+            )
             self.state = 11
 
-        # STATE 11: Wait for turn to finish
+        # STATE 11: Wait for first 90 turn
         elif self.state == 11:
             if not self.motion_controller.is_busy():
-                print("[TASK] Driving forward 25 cm")
+                print("[TASK] Second 90 turn on roundabout")
                 self.state = 12
 
-        # STATE 12: Drive forward 25 cm
+        # STATE 12: Second 90 RIGHT turn
         elif self.state == 12:
-            self.motion_controller.drive_distance(0.25, 0.08)
+            self.motion_controller.drive_arc(
+                angle_rad=-math.radians(90),
+                radius=0.375,
+                linear_speed=0.2
+            )
             self.state = 13
 
-        # STATE 13: Wait for forward motion to finish
+        # STATE 13: Wait for second 90 turn
         elif self.state == 13:
+            if not self.motion_controller.is_busy():
+                print("[TASK] Turning 90 right to exit")
+                self.state = 14
+
+        # STATE 14: Turn 90 RIGHT to face exit direction
+        elif self.state == 14:
+            self.motion_controller.turn_in_place(math.radians(90))
+            self.state = 15
+
+        # STATE 15: Wait for turn to finish
+        elif self.state == 15:
+            if not self.motion_controller.is_busy():
+                print("[TASK] Driving forward 25 cm")
+                self.state = 16
+
+        # STATE 16: Drive forward 25 cm
+        elif self.state == 16:
+            self.motion_controller.drive_distance(0.25, 0.08)
+            self.state = 17
+
+        # STATE 17: Wait for forward motion to finish
+        elif self.state == 17:
             if not self.motion_controller.is_busy():
                 print("[TASK] StartRoundaboutTask completed")
                 return TaskStatus.DONE
