@@ -7,6 +7,7 @@ from tasks.base_tasks.small_turn import SmallTurnTask
 from tasks.advanced_tasks.bonus_time import BonusTimeTask
 from tasks.advanced_tasks.timer_first import TimerFirstTask
 from tasks.advanced_tasks.first_ball import FirstBallTask
+from tasks.advanced_tasks.start_roundabout import StartRoundaboutTask
 
 class MissionManager:
 
@@ -29,6 +30,7 @@ class MissionManager:
         # self.task_queue.append(BonusTimeTask(self.world, self.motion_controller, self.servo_controller))
         # self.task_queue.append(DriveDistLineTask(self.world, self.motion_controller, self.servo_controller, distance=50.0, velocity=0.4))
         # self.task_queue.append(SmallTurnTask(self.world, self.motion_controller, self.servo_controller, velocity=0.4, action="RIGHT"))
+        self.task_queue.append(StartRoundaboutTask(self.world, self.motion_controller, self.servo_controller))
         self.task_queue.append(TimerFirstTask(self.world, self.motion_controller, self.servo_controller))
         self.task_queue.append(FirstBallTask(self.world, self.motion_controller, self.servo_controller))
 

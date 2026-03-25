@@ -142,6 +142,21 @@ class MotionController(threading.Thread):
         
         self.robot.set_velocity(linear_speed, angular_speed) # Hardware command sent
         self.current_task = "drive_circle" # Thread begins monitoring
+
+    def _handle_drive_arc_mission(self):
+        start_angle = self.task_params.get("start_angle", 0.0)
+        target_delta = self.task_params.get("target_delta", 0.0)
+
+        current_angle = self.world.get_imu()[0]
+        turned = self._normalize_angle(current_angle - start_angle)
+        error = self._normalize_angle(target_delta - turned)
+
+        print(f"% MotionController: Arc drive - turned: {turned:.2f}, target: {target_delta:.2f}, error: {error:.2f}")
+
+        if abs(error) < 0.05:
+            print("% MotionController: Arc complete.")
+            self.robot.stop()
+            self.current_task = None
     
     def is_busy(self):
         """Returns True if the robot is currently executing a motion command."""

@@ -1,0 +1,121 @@
+# tasks/advanced_tasks/start_roundabout.py
+
+from tasks.base_task import BaseTask, TaskStatus
+from mqtt_python.spose import pose
+import time
+import math
+
+
+class StartRoundaboutTask(BaseTask):
+
+    def __init__(self, world, motion_controller, servo_controller):
+        super().__init__(world, motion_controller, servo_controller)
+        self.state = 0
+
+    def start(self):
+        super().start()
+        print("[TASK] StartRoundaboutTask started")
+        self.state = 0
+
+    def update(self):
+
+        # STATE 0: Follow white line for 1.5 meters
+        if self.state == 0:
+            self.servo_controller.servo_control(1, -800, 300)
+            self.motion_controller.follow_for_distance(1.5, 0.2)
+            self.state = 1
+
+        # STATE 1: Wait for line following to finish
+        elif self.state == 1:
+            if not self.motion_controller.is_busy():
+                print("[TASK] Entering roundabout")
+                self.state = 2
+
+        # STATE 2: Enter roundabout with a small right arc
+        elif self.state == 2:
+            self.motion_controller.drive_arc(
+                angle_rad=math.radians(45),
+                radius=0.30,
+                linear_speed=0.09
+            )
+            self.state = 3
+
+        # STATE 3: Wait for entry arc to finish
+        elif self.state == 3:
+            if not self.motion_controller.is_busy():
+                print("[TASK] Driving on roundabout")
+                self.state = 4
+
+        # STATE 4: Small arc to align on roundabout
+        elif self.state == 4:
+            self.motion_controller.drive_arc(
+                angle_rad=math.radians(15),
+                radius=0.30,
+                linear_speed=0.09
+            )
+            self.state = 5
+
+        # STATE 5: Wait for alignment arc
+        elif self.state == 5:
+            if not self.motion_controller.is_busy():
+                print("[TASK] First 90° turn on roundabout")
+                self.state = 6
+
+        # STATE 6: First 90° RIGHT turn (follow roundabout)
+        elif self.state == 6:
+            self.motion_controller.drive_arc(
+                angle_rad=-math.radians(90),
+                radius=0.375,
+                linear_speed=0.2
+            )
+            self.state = 7
+
+        # STATE 7: Wait for first 90° turn
+        elif self.state == 7:
+            if not self.motion_controller.is_busy():
+                print("[TASK] Second 90° turn on roundabout")
+                self.state = 8
+
+        # STATE 8: Second 90° RIGHT turn
+        elif self.state == 8:
+            self.motion_controller.drive_arc(
+                angle_rad=-math.radians(90),
+                radius=0.375,
+                linear_speed=0.2
+            )
+            self.state = 9
+
+        # STATE 9: Wait for second 90° turn
+        elif self.state == 9:
+            if not self.motion_controller.is_busy():
+                print("[TASK] Turning 90° right to exit")
+                self.state = 10
+
+        # STATE 10: Turn 90° RIGHT to face exit direction
+        elif self.state == 10:
+            self.motion_controller.turn_in_place(math.radians(90))
+            self.state = 11
+
+        # STATE 11: Wait for turn to finish
+        elif self.state == 11:
+            if not self.motion_controller.is_busy():
+                print("[TASK] Driving forward 25 cm")
+                self.state = 12
+
+        # STATE 12: Drive forward 25 cm
+        elif self.state == 12:
+            self.motion_controller.drive_distance(0.25, 0.08)
+            self.state = 13
+
+        # STATE 13: Wait for forward motion to finish
+        elif self.state == 13:
+            if not self.motion_controller.is_busy():
+                print("[TASK] StartRoundaboutTask completed")
+                return TaskStatus.DONE
+
+        return TaskStatus.RUNNING
+
+    def stop(self):
+        super().stop()
+        self.motion_controller.robot.stop()
+        print("[TASK] StartRoundaboutTask stopped")
