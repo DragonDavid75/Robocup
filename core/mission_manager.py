@@ -8,6 +8,7 @@ from tasks.advanced_tasks.bonus_time import BonusTimeTask
 from tasks.advanced_tasks.timer_first import TimerFirstTask
 from tasks.advanced_tasks.first_ball import FirstBallTask
 from tasks.advanced_tasks.test_task import TestTask
+from tasks.advanced_tasks.first_golf import ForwardWithBallTask
 from tasks.drive_roundabout import DriveRoundaboutTask
 from tasks.exit_roundabout import ExitRoundaboutTask
 
@@ -29,7 +30,7 @@ class MissionManager:
         Define the mission sequence.
         This is where your group defines order of tasks.
         """
-        self.task_queue.append(TestTask(self.world, self.motion_controller, self.servo_controller))
+        # self.task_queue.append(ForwardWithBallTask(self.world, self.motion_controller, self.servo_controller))
         # self.task_queue.append(DriveRoundaboutTask(self.world, self.motion_controller, self.servo_controller))
         # Exit roundabout: turn right 90° and follow the line
         # self.task_queue.append(ExitRoundaboutTask(self.world,self.motion_controller,self.servo_controller))

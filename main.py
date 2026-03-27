@@ -19,13 +19,14 @@ vision = VisionSystem(world)
 mission = MissionManager(world, motion, servo)
 localizer = Localizer(world)
 
-motion.start()
-vision.start()
+# motion.start()
+# servo.start()
+# vision.start()
 localizer.start()
-line_follower.start()
+# line_follower.start()
 
 try:
-    while not service.stop and mission.running:
+    while not service.stop and True:
         mission.update()
         time.sleep(0.1)
 

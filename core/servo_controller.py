@@ -12,8 +12,11 @@ class ServoController(threading.Thread):
         self.task_params = {}
 
     def run(self):
+        print("% ServoController: Starting servo controller thread...")
         while self.running:
+            print(f"% ServoController: Current task: {self.current_task}")
             if self.current_task == 'servo_control':
+                print("% ServoController: Running servo control task...")
                 self._handle_servo_control()
             elif service.stop:
                 print("% ServoController: Emergency stop activated!")
@@ -25,6 +28,8 @@ class ServoController(threading.Thread):
         """Monitors the timer for the servo motion."""
         start_time = self.task_params.get("start_time", 0)
         duration = self.task_params.get("duration", 0)
+
+        print(f"% ServoController: Monitoring servo control task. Elapsed time: {time.time() - start_time:.2f}s / {duration:.2f}s")
         
         # Once the time is up, just clear the task. No hardware commands sent!
         if time.time() - start_time >= duration:
@@ -33,7 +38,7 @@ class ServoController(threading.Thread):
 
     # --- High Level Commands ---
 
-    def servo_control(self, idx, pos, speed, duration=0):
+    def servo_control(self, idx, pos, speed, duration=0.5):
         """
         Sends the command immediately from the main thread and 
         tells the background thread to start the wait timer.
