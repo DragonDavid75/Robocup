@@ -7,6 +7,9 @@ from tasks.base_tasks.small_turn import SmallTurnTask
 from tasks.advanced_tasks.bonus_time import BonusTimeTask
 from tasks.advanced_tasks.timer_first import TimerFirstTask
 from tasks.advanced_tasks.first_ball import FirstBallTask
+from tasks.advanced_tasks.test_task import TestTask
+from tasks.drive_roundabout import DriveRoundaboutTask
+from tasks.exit_roundabout import ExitRoundaboutTask
 
 class MissionManager:
 
@@ -26,11 +29,14 @@ class MissionManager:
         Define the mission sequence.
         This is where your group defines order of tasks.
         """
-        # self.task_queue.append(BonusTimeTask(self.world, self.motion_controller, self.servo_controller))
+        self.task_queue.append(TestTask(self.world, self.motion_controller, self.servo_controller))
+        # self.task_queue.append(DriveRoundaboutTask(self.world, self.motion_controller, self.servo_controller))
+        # Exit roundabout: turn right 90° and follow the line
+        # self.task_queue.append(ExitRoundaboutTask(self.world,self.motion_controller,self.servo_controller))
         # self.task_queue.append(DriveDistLineTask(self.world, self.motion_controller, self.servo_controller, distance=50.0, velocity=0.4))
         # self.task_queue.append(SmallTurnTask(self.world, self.motion_controller, self.servo_controller, velocity=0.4, action="RIGHT"))
-        self.task_queue.append(TimerFirstTask(self.world, self.motion_controller, self.servo_controller))
-        self.task_queue.append(FirstBallTask(self.world, self.motion_controller, self.servo_controller))
+        #self.task_queue.append(TimerFirstTask(self.world, self.motion_controller, self.servo_controller))
+        #self.task_queue.append(FirstBallTask(self.world, self.motion_controller, self.servo_controller))
 
     def start_next_task(self):
         if len(self.task_queue) == 0:
