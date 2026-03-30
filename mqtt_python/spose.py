@@ -70,7 +70,7 @@ class SPose:
       return (self.wheelVelocity[0] - self.wheelVelocity[1])/self.wheelBase
 
     def setup(self):
-      from .uservice import service
+      from mqtt_python.uservice import service
       loops = 0
       configured = False
       # get robot configuration (once)
@@ -89,7 +89,7 @@ class SPose:
           ## send robot configuration
           # confw rl rr g t wb Set configuration 
           #     radius (left,right (m)), gear, encTick, wheelbase (m)
-          service.send("robobot/cmd/T0","confw 0.074 0.074 19 92 0.23")
+          service.send("robobot/cmd/T0","confw 0.074 0.074 19 68 0.23")
           # encoder reversed (motortest only)
           # service.send("robobot/cmd/T0/encrev","1")
           # request new configuration from Teensy
@@ -117,19 +117,19 @@ class SPose:
       pass
 
     def printMVel(self):
-      from .uservice import service
+      from mqtt_python.uservice import service
       print("% Pose motor velocity " + str(self.motorVelocityTime - service.startTime) + " (" +
             str(self.motorVelocity[0]) + ", " +
             str(self.motorVelocity[1]) + f") (rad/sec) {self.motorVelocityInterval:.4f} sec " +
             str(self.motorVelocityCnt))
     def printWVel(self):
-      from .uservice import service
+      from mqtt_python.uservice import service
       print("% Pose wheel velocity " + str(self.wheelVelocityTime - service.startTime) + " (" +
             str(self.wheelVelocity[0]) + ", " +
             str(self.wheelVelocity[1]) + f") (m/sec) {self.wheelVelocityInterval:.4f} sec " +
             str(self.wheelVelocityCnt))
     def printPose(self):
-      from .uservice import service
+      from mqtt_python.uservice import service
       print("% Pose  " + str(self.poseTime - service.startTime) + " (" +
             f"{self.pose[0]:.3f}, " +
             f"{self.pose[1]:.3f}, " +
@@ -137,7 +137,7 @@ class SPose:
             f"{self.pose[3]:.4f}) (m,m,rad,rad) {self.poseInterval:.4f} sec " +
             str(self.poseCnt))
     def printInfo(self):
-      from .uservice import service
+      from mqtt_python.uservice import service
       print(f"% SPose.py:: Robot config info {self.infoCnt} at " + str(self.motorVelocityTime - service.startTime))
       print(f"%    - Wheel radius (left,right): ({self.radiusLeft}, {self.radiusRight} m")
       print(f"%    - Encoder tick per rev: {self.tickPerRev}")
@@ -163,7 +163,7 @@ class SPose:
       return (datetime.now() - self.tripBtime).total_seconds()
 
     def decode(self, topic, msg):
-        from .ulog import flog
+        from mqtt_python.ulog import flog
         # decode MQTT message
         used = True
         if topic == "T0/vel":

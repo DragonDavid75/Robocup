@@ -5,7 +5,7 @@ from mqtt_python.spose import pose
 import time
 
 
-class DriveOneMeterTask(BaseTask):
+class DriveSophieTask(BaseTask):
 
     def __init__(self, world, motion_controller):
         super().__init__(world, motion_controller)
@@ -16,13 +16,19 @@ class DriveOneMeterTask(BaseTask):
         super().start()
         print("[TASK] DriveOneMeter started")
         self.state = 0
+        self.motion_controller.robot.set_servo(1, -500, 300)
         self.start_time = time.time()
 
-    def update(self):
 
+    def update(self):
+       if self.state ==0:
+
+
+
+	
         if self.state == 0:
             # Start driving
-            self.motion_controller.drive_distance(2.2, -0.2)
+            self.motion_controller.drive_distance(0.5, 0.05)
             self.state = 1
 
         elif self.state == 1:

@@ -8,9 +8,10 @@ class TaskStatus:
 
 class BaseTask:
 
-    def __init__(self, world, motion_controller):
+    def __init__(self, world, motion_controller, servo_controller):
         self.world = world
         self.motion_controller = motion_controller
+        self.servo_controller = servo_controller
         self.started = False
 
     def start(self):

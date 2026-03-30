@@ -1,18 +1,23 @@
 # core/mission_manager.py
 
 import time
-from tasks.drive_one_left import DriveOneLeftTask
-from tasks.drive_one_meter import DriveOneMeterTask
-from tasks.drive_to_roundabout import DriveToRoundaboutTask
-from tasks.turn_in_place import TurnInPlaceTask
 from tasks.base_task import TaskStatus
-
+from tasks.base_tasks.drive_dist_line import DriveDistLineTask
+from tasks.base_tasks.small_turn import SmallTurnTask
+from tasks.advanced_tasks.bonus_time import BonusTimeTask
+from tasks.advanced_tasks.timer_first import TimerFirstTask
+from tasks.advanced_tasks.first_ball import FirstBallTask
+from tasks.advanced_tasks.test_task import TestTask
+from tasks.advanced_tasks.first_golf import ForwardWithBallTask
+from tasks.drive_roundabout import DriveRoundaboutTask
+from tasks.exit_roundabout import ExitRoundaboutTask
 
 class MissionManager:
 
-    def __init__(self, world, motion_controller):
+    def __init__(self, world, motion_controller, servo_controller):
         self.world = world
         self.motion_controller = motion_controller
+        self.servo_controller = servo_controller
         self.current_task = None
         self.task_queue = []
         self.running = True
@@ -20,12 +25,13 @@ class MissionManager:
         # Define mission sequence here
         self.build_mission()
 
+    """
+    Builds the mission by adding tasks to the task queue in the desired order.
+    You can customize this method to create different mission sequences by adding or removing tasks.
+    Each task should be an instance of a class that implements the Task interface (with start, update, and stop methods).
+    """
     def build_mission(self):
-        """
-        Define the mission sequence.
-        This is where your group defines order of tasks.
-        """
-        self.task_queue.append(DriveOneLeftTask(self.world, self.robot))
+        # self.task_queue.append(ExampleTask(self.world, self.motion_controller, self.servo_controller))
 
     def start_next_task(self):
         if len(self.task_queue) == 0:
@@ -37,7 +43,6 @@ class MissionManager:
         self.current_task.start()
 
     def update(self):
-
         if not self.running:
             return
 

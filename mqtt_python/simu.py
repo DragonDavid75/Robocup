@@ -39,7 +39,7 @@ class SImu:
 
     def setup(self):
       # data subscription is set in teensy_interface/build/robot.ini
-      from .uservice import service
+      from mqtt_python.uservice import service
       loops = 0
       while not service.stop:
         t.sleep(0.01)
@@ -71,17 +71,17 @@ class SImu:
       pass
 
     def print(self):
-      from .uservice import service
-      print("% IMU acc  " + str(self.accTime - service.startTime) + " (" +
-            str(self.acc[0]) + ", " +
-            str(self.acc[1]) + ", " +
-            str(self.acc[2]) + f") {self.gyroInterval:.4f} sec " +
-            str(self.accUpdCnt))
-      print("% IMU gyro " + str(self.gyroTime - service.startTime) + " (" +
-            str(self.gyro[0]) + ", " +
-            str(self.gyro[1]) + ", " +
-            str(self.gyro[2]) + f") {self.accInterval:.4f} sec " +
-            str(self.gyroUpdCnt))
+      from mqtt_python.uservice import service
+      # print("% IMU acc  " + str(self.accTime - service.startTime) + " (" +
+      #       str(self.acc[0]) + ", " +
+      #       str(self.acc[1]) + ", " +
+      #       str(self.acc[2]) + f") {self.gyroInterval:.4f} sec " +
+      #       str(self.accUpdCnt))
+      # print("% IMU gyro " + str(self.gyroTime - service.startTime) + " (" +
+      #       str(self.gyro[0]) + ", " +
+      #       str(self.gyro[1]) + ", " +
+      #       str(self.gyro[2]) + f") {self.accInterval:.4f} sec " +
+      #       str(self.gyroUpdCnt))
 
     def decode(self, topic, msg):
         # decode MQTT message
@@ -100,7 +100,7 @@ class SImu:
             else:
               self.gyroInterval = (self.gyroInterval * 99 + (t1 -t0).total_seconds()) / 100
             self.gyroUpdCnt += 1
-            # self.print()
+            self.print()
         elif topic == "T0/acc":
           gg = msg.split(" ")
           if (len(gg) >= 4):
@@ -115,7 +115,7 @@ class SImu:
             else:
                self.accInterval = (self.accInterval * 99 + (t1 -t0).total_seconds()) / 100
             self.accUpdCnt += 1
-            # self.print()
+            self.print()
         else:
           used = False
         return used

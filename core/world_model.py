@@ -10,7 +10,6 @@ class WorldModel:
         self.last_update_time_motion = 0.0
         self.last_update_time_sensors = 0.0
         self.last_update_time_manager = 0.0
-        self.last_update_time_localizer = 0.0
 
         # --- Robot state ---
         self.pose_x = 0.0
@@ -18,6 +17,8 @@ class WorldModel:
         self.pose_h = 0.0
         self.velocity = 0.0
         self.turnrate = 0.0
+        self.imu_heading = 0.0
+        self.imu_gyro_z = 0.0
 
         # --- Sensors ---
         self.line_detected = False
@@ -25,14 +26,6 @@ class WorldModel:
         self.line_right = 0.0
         self.ir_values = []
         self.image = None
-
-        # --- IMU ---
-        self.imu_heading = 0.0  # radians from IMU
-        self.imu_gyro_z = 0.0   # rad/sec
-
-        # --- Commands ---
-        self.desired_velocity = 0.0
-        self.desired_turnrate = 0.0
 
         # --- Mission state ---
         self.current_task = None
@@ -43,16 +36,15 @@ class WorldModel:
             self.pose_x = x
             self.pose_y = y
             self.pose_h = h
+            print(f"% WorldModel: Updated pose to x={x:.2f}, y={y:.2f}, h={h:.2f}")
+            # save to text file
+            with open("pose_log.txt", "a") as f:
+                f.write(f"{x:.2f},{y:.2f},{h:.2f}\n")
 
     def set_imu(self, heading, gyro_z):
         with self.lock:
             self.imu_heading = heading
             self.imu_gyro_z = gyro_z
-
-    def set_motion(self, v, w):
-        with self.lock:
-            self.desired_velocity = v
-            self.desired_turnrate = w
 
     def get_motion(self):
         with self.lock:
@@ -65,3 +57,7 @@ class WorldModel:
     def get_imu(self):
         with self.lock:
             return self.imu_heading, self.imu_gyro_z
+
+    def get_velocity(self):
+        with self.lock:
+            return self.velocity
