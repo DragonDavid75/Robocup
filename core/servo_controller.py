@@ -38,11 +38,14 @@ class ServoController(threading.Thread):
 
     # --- High Level Commands ---
 
+    """
+    Moves a servo to a specified position at a given speed, and starts a timer to monitor the duration of the motion.
+    Idx: The index of the servo to control.
+    Pos: The target position for the servo.
+    Speed: The speed at which to move the servo.
+    Duration: Time to wait after sending the command before allowing another command. This is because we don't get feedback from the servo, so we use a timer to estimate when the motion should be complete. Default is 0.5 seconds.
+    """
     def servo_control(self, idx, pos, speed, duration=0.5):
-        """
-        Sends the command immediately from the main thread and 
-        tells the background thread to start the wait timer.
-        """
         print(f"% ServoController: Moving servo {idx} to {pos}. Waiting {duration}s...")
         
         # 1. Send the hardware command immediately (Safe because it's the main thread)
@@ -53,6 +56,11 @@ class ServoController(threading.Thread):
         self.task_params["start_time"] = time.time()
         self.current_task = 'servo_control'
 
+    """
+    Call this method to check if the servo controller is currently executing a task.
+    Returns True if a task is in progress, False otherwise.
+    Use it to prevent starting a new task while another one is still running.
+    """
     def is_busy(self):
         """Returns True if the servo timer is currently running."""
         return self.current_task is not None

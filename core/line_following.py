@@ -125,6 +125,11 @@ class LineFollower(threading.Thread):
         self.last_error = error
         self.last_time = current_time
 
+    """
+    Call this method to start following the line with a specific speed and turn behavior at intersections.
+    Speed: The forward speed to maintain while following the line (in meters per second).
+    Action: The behavior to execute at intersections. Options are "STRAIGHT", "LEFT", "RIGHT". Default is "STRAIGHT".
+    """
     def start_following(self, speed=0.2, action="STRAIGHT"):
         """
         Activates the controller and sets forward speed and intersection behavior.
@@ -137,6 +142,9 @@ class LineFollower(threading.Thread):
         self.active = True
         print(f"LineFollower: Started at speed {speed}, Mode: {self.action}")
         
+    """
+    Call this method to stop following the line immediately.
+    """
     def stop_following(self):
         """Pauses the controller and commands motors to halt"""
         print("LineFollower: Stopped following line")

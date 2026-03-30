@@ -145,12 +145,23 @@ class MotionController(threading.Thread):
 
     # --- High Level Commands ---
 
-    def follow_until_intersection_or_end_line(self, velocity, action="STRAIGHT"):
+    """
+    Follows the line until it detects an intersection currently only.
+    Velocity: The speed at which the robot should follow the line.
+    """
+    def follow_until_intersection_or_end_line(self, velocity):
         print(f"% MotionController: Following line at {velocity}")
         self.robot.reset_trip()
-        self.line_follower.start_following(velocity, action)
+        self.line_follower.start_following(velocity)
         self.current_task = 'line_intersection_or_end'
 
+    """
+    Follows the line for a specific distance.
+    Distance: The distance to follow the line (in meters).
+    Velocity: The speed at which the robot should follow the line.
+    Action: The action to perform at intersections. Options are "STRAIGHT", "LEFT", "RIGHT". Default is "STRAIGHT".
+    For now only one action can be given, and it will be executed at all intersections.
+    """
     def follow_for_distance(self, distance, velocity, action="STRAIGHT"):
         self.task_params = {}
         self.task_params["prev_pos"] = self.world.get_pose()
@@ -160,6 +171,11 @@ class MotionController(threading.Thread):
         self.line_follower.start_following(velocity, action)
         self.current_task = 'line_distance'
 
+    """
+    Drives straight for a specific distance.
+    Distance: The distance to drive (in meters).
+    Velocity: The speed at which the robot should drive.
+    """
     def drive_distance(self, distance, velocity):
         self.task_params = {}
         self.task_params["prev_pos"] = self.world.get_pose()
@@ -169,6 +185,10 @@ class MotionController(threading.Thread):
         self.robot.set_velocity(velocity, 0.0)
         self.current_task = 'drive_distance'
 
+    """
+    Turns in place by a specific angle.
+    Angle_rad: The angle to turn (in radians). Positive values turn left, negative values turn right.
+    """
     def turn_in_place(self, angle_rad):
         current_h = self.world.get_imu()[0]
         self.task_params = {}
@@ -178,6 +198,11 @@ class MotionController(threading.Thread):
         self.robot.set_velocity(0.0, turn_speed)
         self.current_task = 'turn'
 
+    """
+    Drives in a circle with a specific radius and linear speed.
+    Radius: The radius of the circle (in meters).
+    Linear_speed: The linear speed at which the robot should drive (in meters per second).
+    """
     def drive_circle(self, radius, linear_speed):
         """
         Drive one full circle using radius and linear speed.
@@ -193,13 +218,13 @@ class MotionController(threading.Thread):
         self.robot.set_velocity(linear_speed, angular_speed)
         self.current_task = "drive_circle"
 
+    """
+    Drives an arc by a specific angle, radius, and linear speed.
+    Angle_rad: The angle to turn (in radians). Positive values turn left, negative values turn right.
+    Radius: The radius of the arc (in meters).
+    Linear_speed: The linear speed at which the robot should drive (in meters per second).
+    """
     def drive_arc(self, angle_rad, radius=0.35, linear_speed=0.05):
-        """
-        Drive an arc by angle.
-
-        angle_rad > 0  => left turn
-        angle_rad < 0  => right turn
-        """
         self.robot.set_line_control(0, False)
 
         angular_speed = linear_speed / radius
@@ -214,14 +239,26 @@ class MotionController(threading.Thread):
         self.current_task = 'drive_arc'
         self.robot.set_velocity(linear_speed, angular_speed)
 
+    """
+    Drives straight until it detects a line.
+    Velocity: The speed at which the robot should drive.
+    """
     def drive_to_line(self, velocity):
         print(f"% MotionController: Driving to line at {velocity}")
         self.robot.set_velocity(velocity, 0.0)
         self.current_task = 'drive_to_line'
 
+    """
+    Checks if the motion controller is currently executing a task.
+    Returns True if a task is in progress, False otherwise.
+    Use it to prevent starting a new task while another one is still running.
+    """
     def is_busy(self):
         return self.current_task is not None
 
+    """
+    Stops the motion controller and the robot immediately.
+    """
     def stop(self):
         self.running = False
         self.robot.stop()

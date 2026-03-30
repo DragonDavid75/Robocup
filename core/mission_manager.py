@@ -25,19 +25,13 @@ class MissionManager:
         # Define mission sequence here
         self.build_mission()
 
+    """
+    Builds the mission by adding tasks to the task queue in the desired order.
+    You can customize this method to create different mission sequences by adding or removing tasks.
+    Each task should be an instance of a class that implements the Task interface (with start, update, and stop methods).
+    """
     def build_mission(self):
-        """
-        Define the mission sequence.
-        This is where your group defines order of tasks.
-        """
-        # self.task_queue.append(ForwardWithBallTask(self.world, self.motion_controller, self.servo_controller))
-        # self.task_queue.append(DriveRoundaboutTask(self.world, self.motion_controller, self.servo_controller))
-        # Exit roundabout: turn right 90° and follow the line
-        # self.task_queue.append(ExitRoundaboutTask(self.world,self.motion_controller,self.servo_controller))
-        # self.task_queue.append(DriveDistLineTask(self.world, self.motion_controller, self.servo_controller, distance=50.0, velocity=0.4))
-        # self.task_queue.append(SmallTurnTask(self.world, self.motion_controller, self.servo_controller, velocity=0.4, action="RIGHT"))
-        #self.task_queue.append(TimerFirstTask(self.world, self.motion_controller, self.servo_controller))
-        #self.task_queue.append(FirstBallTask(self.world, self.motion_controller, self.servo_controller))
+        # self.task_queue.append(ExampleTask(self.world, self.motion_controller, self.servo_controller))
 
     def start_next_task(self):
         if len(self.task_queue) == 0:
@@ -49,7 +43,6 @@ class MissionManager:
         self.current_task.start()
 
     def update(self):
-
         if not self.running:
             return
 
