@@ -133,6 +133,13 @@ class VisionSystem(threading.Thread):
                         if drive == 0.0:
                             # Close gripper
                             self.client.publish(self.MQTT_TOPIC_GRIPPER, "servo 2 -1000 500")
+                            # 2. Send explicit stop command to motors
+                            self.client.publish(self.MQTT_TOPIC_DRIVE, "rc 0.0 0.0")
+                            
+                            # 3. Print status and exit the thread loop
+                            print(f"Target {self.target_color} reached. Task complete. Exiting.")
+                            self.running = False 
+                            break # Break the while loop immediately
                         else:
                             # Open/Ready gripper
                             self.client.publish(self.MQTT_TOPIC_GRIPPER, "servo 2 0 500")
