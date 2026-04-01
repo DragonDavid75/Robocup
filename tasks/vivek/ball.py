@@ -4,7 +4,6 @@ tasks/ball.py
 
 from tasks.base_task import BaseTask, TaskStatus
 from mqtt_python.spose import pose
-from core.drive_to_ball import DriveToBallTask
 import time
 
 
@@ -27,13 +26,12 @@ class BallTask(BaseTask):
 
         if self.state == 0:
             # Start the drive-to-ball task
-            self.drive_to_ball_task = DriveToBallTask(self.world)
-            self.drive_to_ball_task.start()
+            self.motion_controller.drive_to_ball()
             self.state = 1
 
 
         elif self.state == 1:
-            if not self.drive_to_ball_task.is_alive():
+            if self.motion_controller.is_busy():
                 print("[TASK] BallTask completed")
                 return TaskStatus.DONE
 

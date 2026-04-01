@@ -143,7 +143,7 @@ class DriveToBallTask(threading.Thread):
                         self.world.image = frame_cal
                         self.world.ball_coords = coords
 
-            time.sleep(0.05) # ~20 FPS is plenty for control
+            # time.sleep(0.05) # ~20 FPS is plenty for control
 
     def stop(self):
         self.running = False

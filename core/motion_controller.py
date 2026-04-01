@@ -7,11 +7,13 @@ from mqtt_python.sedge import edge
 
 class MotionController(threading.Thread):
 
-    def __init__(self, world, robot, line_follower):
+    def __init__(self, world, robot, line_follower, ball_task):
         super().__init__()
         self.world = world
         self.robot = robot
         self.line_follower = line_follower
+        self.ball_task = ball_task
+
         self.running = True
         self.current_task = None
         self.task_params = {}
@@ -39,6 +41,9 @@ class MotionController(threading.Thread):
 
             elif self.current_task == 'drive_to_line':
                 self._handle_drive_to_line_mission()
+
+            elif self.current_task == 'drive_to_ball':
+                self._handle_drive_to_ball_mission()
 
             elif service.stop:
                 print("% MotionController: Emergency stop activated!")
@@ -140,6 +145,12 @@ class MotionController(threading.Thread):
     def _handle_drive_to_line_mission(self):
         if edge.crossingLine:
             print("% MotionController: Line detected!")
+            self.robot.stop()
+            self.current_task = None
+
+    def _handle_drive_to_ball_mission(self):
+        if self.ball_task.is_complete():
+            print("% MotionController: Ball reached!")
             self.robot.stop()
             self.current_task = None
 
@@ -247,6 +258,13 @@ class MotionController(threading.Thread):
         print(f"% MotionController: Driving to line at {velocity}")
         self.robot.set_velocity(velocity, 0.0)
         self.current_task = 'drive_to_line'
+
+    """
+    Drives straight until it detects the ball using the vision system.
+    """
+    def drive_to_ball(self):
+        print(f"% MotionController: Driving to ball")
+        self.ball_task.start()
 
     """
     Checks if the motion controller is currently executing a task.

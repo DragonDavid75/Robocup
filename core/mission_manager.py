@@ -32,7 +32,6 @@ class MissionManager:
     Each task should be an instance of a class that implements the Task interface (with start, update, and stop methods).
     """
     def build_mission(self):
-        # self.task_queue.append(DriveDistLineTask(self.world, self.motion_controller, self.servo_controller, distance=20, velocity=0.5))
         self.task_queue.append(BallTask(self.world, self.motion_controller, self.servo_controller))
 
     def start_next_task(self):
