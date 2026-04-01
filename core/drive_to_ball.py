@@ -2,8 +2,9 @@ import threading
 import time
 import cv2
 import numpy as np
-import paho.mqtt.client as mqtt
 from mqtt_python.scam import cam
+from mqtt_python.uservice import service
+from mqtt_python.sedge import edge
 
 class VisionSystem(threading.Thread):
     def __init__(self, world):
@@ -14,8 +15,6 @@ class VisionSystem(threading.Thread):
         # --- MQTT Setup ---
         self.MQTT_TOPIC_GRIPPER = "robobot/cmd/T0"
         self.MQTT_TOPIC_DRIVE = "robobot/cmd/ti"
-        self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
-        self.client.connect("localhost", 1883, 60)
         self.client.loop_start()
 
         # --- Calibration & Homography ---
@@ -61,7 +60,7 @@ class VisionSystem(threading.Thread):
         return float(world_x), float(world_y)
 
     def calculate_control_signals(self, current_x, current_y):
-        """PID logic for movement."""
+        """control logic for movement."""
         error_x = self.TARGET_X - current_x 
         error_y = current_y - self.TARGET_Y
 
@@ -132,9 +131,9 @@ class VisionSystem(threading.Thread):
                         # Gripper Logic based on Drive (Distance)
                         if drive == 0.0:
                             # Close gripper
-                            self.client.publish(self.MQTT_TOPIC_GRIPPER, "servo 2 -1000 500")
+                            service.publish(self.MQTT_TOPIC_GRIPPER, "servo 2 -1000 500")
                             # 2. Send explicit stop command to motors
-                            self.client.publish(self.MQTT_TOPIC_DRIVE, "rc 0.0 0.0")
+                            service.publish(self.MQTT_TOPIC_DRIVE, "rc 0.0 0.0")
                             
                             # 3. Print status and exit the thread loop
                             print(f"Target {self.target_color} reached. Task complete. Exiting.")
@@ -142,11 +141,11 @@ class VisionSystem(threading.Thread):
                             break # Break the while loop immediately
                         else:
                             # Open/Ready gripper
-                            self.client.publish(self.MQTT_TOPIC_GRIPPER, "servo 2 0 500")
+                            service.publish(self.MQTT_TOPIC_GRIPPER, "servo 2 0 500")
 
                     # 3. Apply drive command
                     drive_cmd = f"rc {drive:.1f} {turn:.1f}"
-                    self.client.publish(self.MQTT_TOPIC_DRIVE, drive_cmd)
+                    service.publish(self.MQTT_TOPIC_DRIVE, drive_cmd)
 
                     # 4. Update shared world state
                     with self.world.lock:
@@ -157,5 +156,4 @@ class VisionSystem(threading.Thread):
 
     def stop(self):
         self.running = False
-        self.client.publish(self.MQTT_TOPIC_DRIVE, "rc 0.0 0.0") # Stop robot on exit
-        self.client.loop_stop()
+        service.publish(self.MQTT_TOPIC_DRIVE, "rc 0.0 0.0") # Stop robot on exit
