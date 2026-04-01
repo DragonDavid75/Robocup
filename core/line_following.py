@@ -112,13 +112,39 @@ class LineFollower(threading.Thread):
         D_out = self.Kd * derivative
         
         # 7. Compute Total Output
-        turn_rate = max(min(P_out + I_out + D_out, 4.0), -4.0)
+        #turn_rate = max(min(P_out + I_out + D_out, 4.0), -4.0)
         
         # 8. Send MQTT Command (using the timer state instead of raw crossingLine)
+        # if in_turn_mode:
+        #     command = f"rc {self.turn_speed:.3f} {turn_rate:.3f} {current_time}"
+        # else:
+        #     command = f"rc {self.target_speed:.3f} {turn_rate:.3f} {current_time}"
+        # service.send("robobot/cmd/ti", command)
+
+        # --- 7.5 Variable Velocity Calculation ---
+        abs_error = abs(error)
+        max_possible_error = 3.5  # Max weight of your sensors
+        
+        # Define your dynamic range based on the target_speed
+        min_v = self.target_speed - 0.1
+        max_v = self.target_speed + 0.2
+        
+        # Calculate how much to "slow down" from the maximum possible speed
+        # When error is 0, we want max_v. When error is max, we want min_v.
+        total_range = max_v - min_v
+        adaptive_speed = max_v - (total_range * (abs_error / max_possible_error))
+        
+        # Ensure the speed is strictly clamped between your desired offsets
+        adaptive_speed = max(min_v, min(max_v, adaptive_speed))
+        
+        # --- 8. Send MQTT Command ---
         if in_turn_mode:
-            command = f"rc {self.turn_speed:.3f} {turn_rate:.3f} {current_time}"
+            # Use the minimum stable speed during detected intersections/turns
+            command = f"rc {min_v:.3f} {turn_rate:.3f} {current_time}"
         else:
-            command = f"rc {self.target_speed:.3f} {turn_rate:.3f} {current_time}"
+            # Use the new calculated adaptive speed for normal following
+            command = f"rc {adaptive_speed:.3f} {turn_rate:.3f} {current_time}"
+        
         service.send("robobot/cmd/ti", command)
         
         # Save state for the next loop iteration
