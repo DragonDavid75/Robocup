@@ -6,7 +6,7 @@ from mqtt_python.scam import cam
 from mqtt_python.uservice import service
 from mqtt_python.sedge import edge
 
-class VisionSystem(threading.Thread):
+class DriveToBallTask(threading.Thread):
     def __init__(self, world):
         super().__init__()
         self.world = world
@@ -15,7 +15,6 @@ class VisionSystem(threading.Thread):
         # --- MQTT Setup ---
         self.MQTT_TOPIC_GRIPPER = "robobot/cmd/T0"
         self.MQTT_TOPIC_DRIVE = "robobot/cmd/ti"
-        self.client.loop_start()
 
         # --- Calibration & Homography ---
         # Pixel points and World points from your calibration
@@ -39,7 +38,7 @@ class VisionSystem(threading.Thread):
 
         # --- Color Definitions (H, S, V) ---
         self.colors = {
-            'red': {'lower1': (0, 10, 80), 'upper1': (10, 255, 255), 'lower2': (170, 10, 80), 'upper2': (180, 255, 255)},
+            'red': {'lower1': (0, 10, 127), 'upper1': (10, 255, 255), 'lower2': (170, 10, 127), 'upper2': (180, 255, 255)},
             'blue': {'lower1': (95, 0, 127), 'upper1': (103, 255, 255)},
             'white': {'lower1': (0, 0, 200), 'upper1': (180, 35, 255)}
         }
@@ -99,9 +98,12 @@ class VisionSystem(threading.Thread):
         return None
 
     def run(self):
+        service.send(self.MQTT_TOPIC_GRIPPER, f"servo 1 200 500 {time.time()}")
+        turn, drive = 0.0, 0.0
         while self.running:
             if cam.useCam:
                 ok, frame, _ = cam.getImage()
+                print(f"DriveToBallTask: Frame received - OK={ok}, Shape={frame.shape if ok else 'N/A'}")
                 if ok:
                     # 1. Undistort and Pre-process
                     h, w = frame.shape[:2]
@@ -117,7 +119,7 @@ class VisionSystem(threading.Thread):
                     # 2. Search for the target ball
                     coords = self.detect_ball(roi_frame, self.target_color)
 
-                    turn, drive = 0.0, 0.0
+                    # turn, drive = 0.0, 0.0
                     
                     if coords:
                         u, v = coords
@@ -131,9 +133,10 @@ class VisionSystem(threading.Thread):
                         # Gripper Logic based on Drive (Distance)
                         if drive == 0.0:
                             # Close gripper
-                            service.publish(self.MQTT_TOPIC_GRIPPER, "servo 2 -1000 500")
+                            service.send(self.MQTT_TOPIC_GRIPPER, f"servo 2 -1000 500 {time.time()}")
+                            # service.publish(self.MQTT_TOPIC_GRIPPER, "servo 2 -1000 500")
                             # 2. Send explicit stop command to motors
-                            service.publish(self.MQTT_TOPIC_DRIVE, "rc 0.0 0.0")
+                            service.send(self.MQTT_TOPIC_DRIVE, f"rc 0.0 0.0 {time.time()}")
                             
                             # 3. Print status and exit the thread loop
                             print(f"Target {self.target_color} reached. Task complete. Exiting.")
@@ -141,11 +144,12 @@ class VisionSystem(threading.Thread):
                             break # Break the while loop immediately
                         else:
                             # Open/Ready gripper
-                            service.publish(self.MQTT_TOPIC_GRIPPER, "servo 2 0 500")
+                            service.send(self.MQTT_TOPIC_GRIPPER, f"servo 2 0 500 {time.time()}")
 
                     # 3. Apply drive command
                     drive_cmd = f"rc {drive:.1f} {turn:.1f}"
-                    service.publish(self.MQTT_TOPIC_DRIVE, drive_cmd)
+                    service.send(self.MQTT_TOPIC_DRIVE, drive_cmd)
+                    print(f"Drive Command: {drive_cmd}")
 
                     # 4. Update shared world state
                     with self.world.lock:
@@ -156,4 +160,4 @@ class VisionSystem(threading.Thread):
 
     def stop(self):
         self.running = False
-        service.publish(self.MQTT_TOPIC_DRIVE, "rc 0.0 0.0") # Stop robot on exit
+        service.send(self.MQTT_TOPIC_DRIVE, f"rc 0.0 0.0 {time.time()}") # Stop robot on exit
