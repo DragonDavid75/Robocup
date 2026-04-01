@@ -112,7 +112,7 @@ class LineFollower(threading.Thread):
         D_out = self.Kd * derivative
         
         # 7. Compute Total Output
-        #turn_rate = max(min(P_out + I_out + D_out, 4.0), -4.0)
+        turn_rate = max(min(P_out + I_out + D_out, 4.0), -4.0)
         
         # 8. Send MQTT Command (using the timer state instead of raw crossingLine)
         # if in_turn_mode:
@@ -127,7 +127,7 @@ class LineFollower(threading.Thread):
         
         # Define your dynamic range based on the target_speed
         min_v = self.target_speed - 0.1
-        max_v = self.target_speed + 0.2
+        max_v = self.target_speed + 0.1
         
         # Calculate how much to "slow down" from the maximum possible speed
         # When error is 0, we want max_v. When error is max, we want min_v.
@@ -140,7 +140,7 @@ class LineFollower(threading.Thread):
         # --- 8. Send MQTT Command ---
         if in_turn_mode:
             # Use the minimum stable speed during detected intersections/turns
-            command = f"rc {min_v:.3f} {turn_rate:.3f} {current_time}"
+            command = f"rc {self.turn_speed:.3f} {turn_rate:.3f} {current_time}"
         else:
             # Use the new calculated adaptive speed for normal following
             command = f"rc {adaptive_speed:.3f} {turn_rate:.3f} {current_time}"

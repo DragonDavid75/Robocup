@@ -36,10 +36,6 @@ class WorldModel:
             self.pose_x = x
             self.pose_y = y
             self.pose_h = h
-            print(f"% WorldModel: Updated pose to x={x:.2f}, y={y:.2f}, h={h:.2f}")
-            # save to text file
-            with open("pose_log.txt", "a") as f:
-                f.write(f"{x:.2f},{y:.2f},{h:.2f}\n")
 
     def set_imu(self, heading, gyro_z):
         with self.lock:
