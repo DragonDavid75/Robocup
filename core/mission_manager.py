@@ -9,7 +9,7 @@ from tasks.advanced_tasks.bonus_time import BonusTimeTask
 from tasks.advanced_tasks.timer_first import TimerFirstTask
 from tasks.advanced_tasks.first_ball import FirstBallTask
 from tasks.advanced_tasks.test_task import TestTask
-from tasks.advanced_tasks.first_golf import ForwardWithBallTask
+from tasks.advanced_tasks.first_golf import Firstball
 from tasks.drive_roundabout import DriveRoundaboutTask
 from tasks.exit_roundabout import ExitRoundaboutTask
 
@@ -32,7 +32,8 @@ class MissionManager:
     Each task should be an instance of a class that implements the Task interface (with start, update, and stop methods).
     """
     def build_mission(self):
-        self.task_queue.append(BallTask(self.world, self.motion_controller, self.servo_controller))
+        #self.task_queue.append(BallTask(self.world, self.motion_controller, self.servo_controller))
+        self.task_queue.append(Firstball(self.world, self.motion_controller, self.servo_controller, distance=1.0, velocity=0.2))
 
     def start_next_task(self):
         if len(self.task_queue) == 0:
