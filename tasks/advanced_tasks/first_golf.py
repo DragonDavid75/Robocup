@@ -1,9 +1,9 @@
-# tasks/ball_follow_and_drive.py
+# tasks/first_golf.py
 
 from tasks.base_task import BaseTask, TaskStatus
 import time
 
-class BallFollowAndDriveTask(BaseTask):
+class Firstball(BaseTask):
 
     def __init__(self, world, motion_controller, servo_controller, distance=1.0, velocity=0.2):
         super().__init__(world, motion_controller, servo_controller)
