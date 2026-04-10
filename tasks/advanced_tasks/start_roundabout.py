@@ -17,7 +17,7 @@ class StartRoundaboutTask(BaseTask):
         print("[TASK] StartRoundaboutTask started")
         self.state = 0
 
-    def update(self):
+    def update(self) -> int:
 
         # STATE 0: Follow white line until first intersection
         if self.state == 0:
@@ -39,15 +39,15 @@ class StartRoundaboutTask(BaseTask):
         # STATE 3: Wait for turn to finish
         elif self.state == 3:
             if not self.motion_controller.is_busy():
-                print("[TASK] Turning complete, driving 90 cm")
+                print("[TASK] Turning complete, following line to end")
                 self.state = 4
 
-        # STATE 4: Drive forward 90 cm
+        # STATE 4: Follow line until it ends
         elif self.state == 4:
-            self.motion_controller.drive_distance(0.90, 0.2)
+            self.motion_controller.follow_until_line_loss(0.2)
             self.state = 5
 
-        # STATE 5: Wait for 90 cm drive to finish
+        # STATE 5: Wait for line end detection
         elif self.state == 5:
             if not self.motion_controller.is_busy():
                 print("[TASK] Entering roundabout")

@@ -2,6 +2,7 @@
 import threading
 import time
 import math
+import typing
 from mqtt_python.uservice import service
 from mqtt_python.sedge import edge
 
@@ -13,7 +14,7 @@ class MotionController(threading.Thread):
         self.line_follower = line_follower
         self.running = True
         self.current_task = None
-        self.task_params = {}
+        self.task_params: dict[str, typing.Any] = {}
         self.distance_ratio = 1.0
 
     def run(self):
@@ -22,6 +23,8 @@ class MotionController(threading.Thread):
                 self._handle_line_intersection_or_end_mission()
             elif self.current_task == 'line_distance':
                 self._handle_line_distance_mission()
+            elif self.current_task == 'line_until_loss':
+                self._handle_line_until_loss_mission()
             elif self.current_task == 'turn':
                 self._handle_turn_mission()
             elif self.current_task == 'drive_distance':
@@ -51,12 +54,22 @@ class MotionController(threading.Thread):
 
     def _handle_line_distance_mission(self):
         """Monitors distance traveled while line following."""
-        current_pos = self.world.get_pose()
-        prev_pos = self.task_params.get("prev_pos", 0)
-        dist_traveled = self.task_params.get("dist_traveled", 0)
+        pose = self.world.get_pose()
+        if not isinstance(pose, tuple) or len(pose) < 3:
+            pose = (0.0, 0.0, 0.0)
+        current_pos = typing.cast(tuple[float, float, float], pose)
+        cx, cy, _ = current_pos
+
+        prev_pose = self.task_params.get("prev_pos")
+        if not isinstance(prev_pose, tuple) or len(prev_pose) < 3:
+            prev_pose = current_pos
+        prev_pos = typing.cast(tuple[float, float, float], prev_pose)
+        px, py, _ = prev_pos
+
+        dist_traveled = float(self.task_params.get("dist_traveled", 0.0) or 0.0)
         
         # Update distance with x,y coordinates
-        dist_traveled += math.sqrt((current_pos[0] - prev_pos[0])**2 + (current_pos[1] - prev_pos[1])**2)
+        dist_traveled += math.sqrt((cx - px)**2 + (cy - py)**2)
         self.task_params["dist_traveled"] = dist_traveled
         self.task_params["prev_pos"] = current_pos
 
@@ -68,12 +81,22 @@ class MotionController(threading.Thread):
 
     def _handle_drive_distance_mission(self):
         """Monitors distance traveled while driving straight."""
-        current_pos = self.world.get_pose()
-        prev_pos = self.task_params.get("prev_pos", 0)
-        dist_traveled = self.task_params.get("dist_traveled", 0)
+        pose = self.world.get_pose()
+        if not isinstance(pose, tuple) or len(pose) < 3:
+            pose = (0.0, 0.0, 0.0)
+        current_pos = typing.cast(tuple[float, float, float], pose)
+        cx, cy, _ = current_pos
+
+        prev_pose = self.task_params.get("prev_pos")
+        if not isinstance(prev_pose, tuple) or len(prev_pose) < 3:
+            prev_pose = current_pos
+        prev_pos = typing.cast(tuple[float, float, float], prev_pose)
+        px, py, _ = prev_pos
+
+        dist_traveled = float(self.task_params.get("dist_traveled", 0.0) or 0.0)
         
         # Update distance with x,y coordinates
-        dist_traveled += math.sqrt((current_pos[0] - prev_pos[0])**2 + (current_pos[1] - prev_pos[1])**2)
+        dist_traveled += math.sqrt((cx - px)**2 + (cy - py)**2)
         self.task_params["dist_traveled"] = dist_traveled
         self.task_params["prev_pos"] = current_pos
 
@@ -119,6 +142,16 @@ class MotionController(threading.Thread):
         
         self.line_follower.start_following(velocity, action) # Hardware command sent
         self.current_task = 'line_distance' # Thread begins monitoring
+
+    def follow_until_line_loss(self, velocity, action="STRAIGHT", loss_timeout=0.3):
+        print(f"% MotionController: Following line until loss at {velocity} m/s")
+        self.task_params = {
+            "last_valid_time": time.time(),
+            "loss_timeout": loss_timeout,
+        }
+        self.robot.reset_trip()
+        self.line_follower.start_following(velocity, action)
+        self.current_task = 'line_until_loss'
 
     def drive_distance(self, distance, velocity):
         print(f"% MotionController: Driving {distance} meters at {velocity} m/s")
@@ -166,8 +199,8 @@ class MotionController(threading.Thread):
         self.robot.set_velocity(linear_speed, angular_speed)
 
     def _handle_drive_arc_mission(self):
-        start_angle = self.task_params.get("start_angle", 0.0)
-        target_delta = self.task_params.get("target_delta", 0.0)
+        start_angle = float(self.task_params.get("start_angle", 0.0) or 0.0)
+        target_delta = float(self.task_params.get("target_delta", 0.0) or 0.0)
 
         current_angle = self.world.get_imu()[0]
         turned = self._normalize_angle(current_angle - start_angle)
@@ -177,6 +210,21 @@ class MotionController(threading.Thread):
 
         if abs(error) < 0.05:
             print("% MotionController: Arc complete.")
+            self.robot.stop()
+            self.current_task = None
+
+    def _handle_line_until_loss_mission(self):
+        current_time = time.time()
+
+        if edge.lineValid or edge.lineValidCnt > 0:
+            self.task_params["last_valid_time"] = current_time
+
+        last_valid_time = float(self.task_params.get("last_valid_time", current_time) or current_time)
+        loss_timeout = float(self.task_params.get("loss_timeout", 0.3) or 0.3)
+
+        if current_time - last_valid_time > loss_timeout:
+            print("% MotionController: Line lost detected.")
+            self.line_follower.stop_following()
             self.robot.stop()
             self.current_task = None
 

@@ -20,7 +20,7 @@ class BaseTask:
         """
         self.started = True
 
-    def update(self):
+    def update(self) -> int:
         """
         Called repeatedly by mission manager.
         Must return TaskStatus.
