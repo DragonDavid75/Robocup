@@ -28,6 +28,8 @@ class MotionController(threading.Thread):
                 self._handle_drive_distance_mission()
             elif self.current_task == 'drive_circle':
                 self._handle_drive_circle_mission()   
+            elif self.current_task == 'drive_arc':
+                self._handle_drive_arc_mission()
             elif service.stop:
                 print("% MotionController: Emergency stop activated!")
                 self.stop()
@@ -143,6 +145,26 @@ class MotionController(threading.Thread):
         self.robot.set_velocity(linear_speed, angular_speed) # Hardware command sent
         self.current_task = "drive_circle" # Thread begins monitoring
 
+    def drive_arc(self, angle_rad, radius=0.35, linear_speed=0.05):
+        """
+        Drive an arc by angle using IMU heading.
+
+        angle_rad > 0 => left turn, angle_rad < 0 => right turn
+        """
+        self.robot.set_line_control(0, False)
+
+        angular_speed = linear_speed / radius
+        if angle_rad < 0:
+            angular_speed = -angular_speed
+
+        self.task_params = {}
+        self.task_params["start_angle"] = self.world.get_imu()[0]
+        self.task_params["target_delta"] = angle_rad
+        self.task_params["angular_speed"] = angular_speed
+
+        self.current_task = 'drive_arc'
+        self.robot.set_velocity(linear_speed, angular_speed)
+
     def _handle_drive_arc_mission(self):
         start_angle = self.task_params.get("start_angle", 0.0)
         target_delta = self.task_params.get("target_delta", 0.0)
@@ -157,6 +179,10 @@ class MotionController(threading.Thread):
             print("% MotionController: Arc complete.")
             self.robot.stop()
             self.current_task = None
+
+    def _normalize_angle(self, angle):
+        """Normalize angle to [-pi, pi]."""
+        return math.atan2(math.sin(angle), math.cos(angle))
     
     def is_busy(self):
         """Returns True if the robot is currently executing a motion command."""
