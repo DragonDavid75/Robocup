@@ -58,8 +58,18 @@ class DriveToPoint(threading.Thread):
         rel_x = dx * math.cos(-oh) - dy * math.sin(-oh)
         rel_y = dx * math.sin(-oh) + dy * math.cos(-oh)
         
+        # SWAPPED assignment (if X and Y are interchanged)
+        # rel_x = dx * math.sin(-oh) + dy * math.cos(-oh)
+        # rel_y = dx * math.cos(-oh) - dy * math.sin(-oh)
+
+        # To flip an axis, multiply the entire result by -1
+        # rel_x = -1 * (dx * math.cos(-oh) - dy * math.sin(-oh)) # Flipped Forward/Backward
+        # rel_y = -1 * (dx * math.sin(-oh) + dy * math.cos(-oh)) # Flipped Left/Right
+        
         # 3. Relative Heading
         rel_h = (gh - oh + math.pi) % (2 * math.pi) - math.pi
+        # To this (invert the subtraction order):
+        # rel_h = (oh - gh + math.pi) % (2 * math.pi) - math.pi
 
         return rel_x, rel_y, rel_h
 
