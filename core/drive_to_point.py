@@ -1,176 +1,163 @@
 import threading
 import time
-import math
+import cv2
 import numpy as np
+from mqtt_python.scam import cam
 from mqtt_python.uservice import service
 
-class DriveToPoint(threading.Thread):
-    def __init__(self, world, target_x=0.0, target_y=0.0, path=None, final_h=None):
-        """
-        All coordinates are relative to the robot's current position when called.
-        :param world: WorldModel instance providing get_pose() -> (x, y, h)
-        :param target_x: Relative forward distance in meters
-        :param target_y: Relative sideways distance in meters (Left is positive)
-        :param path: Optional list of (x, y) tuples for curved movement
-        :param final_h: Relative heading in radians (e.g., math.pi/2 is 90 deg left)
-        """
+class DriveToBallTask(threading.Thread):
+    def __init__(self, world):
         super().__init__()
         self.world = world
         self.running = True
         
-        # --- MQTT Topics ---
+        # --- MQTT Setup ---
+        self.MQTT_TOPIC_GRIPPER = "robobot/cmd/T0"
         self.MQTT_TOPIC_DRIVE = "robobot/cmd/ti"
 
-        # --- Controller Parameters ---
-        self.K_P_LIN = 0.5        # Speed gain
-        self.K_P_ANG = 1.2        # Steering gain
-        self.DIST_TOL = 0.05      # Arrival tolerance (5cm)
-        self.ANG_TOL = 0.08       # Angle tolerance (~4.5 degrees)
-        self.MAX_LIN = 0.5        # Max drive speed
-        self.MAX_ANG = 0.6        # Max turn speed
+        # --- Calibration & Homography ---
+        self.pixel_points = np.array([(110, 551), (716, 552), (249, 372), (565, 372), (408, 432), (406, 372), (414, 551), (201, 434), (615, 432)], dtype=np.float32)
+        self.world_points = np.array([(-15, 30), (15, 30), (-15, 60), (15, 60), (0, 30), (0, 45), (0, 60), (-15, 45), (15, 45)], dtype=np.float32)
+        self.H, _ = cv2.findHomography(self.pixel_points, self.world_points, cv2.RANSAC, 5.0)
 
-        # --- Mission Data ---
-        self.final_h = final_h
-        self.waypoints = path if path else [(target_x, target_y)]
+        # Using np.array for matrices
+        self.mtx = np.array([[642.21815902, 0., 406.71091241], [0., 639.62546619, 292.02420168], [0., 0., 1.]])
+        self.dist = np.array([[0.02674745, -0.10674703, -0.00277349, 0.0034295, 0.16937755]])
+
+        # --- PRE-CALCULATE UNDISTORTION MAPS ---
+        # Assuming standard resolution 800x600; adjust if your camera output differs
+        w, h = 800, 600 
+        self.newcameramtx, self.roi = cv2.getOptimalNewCameraMatrix(self.mtx, self.dist, (w, h), 1, (w, h))
+        self.mapx, self.mapy = cv2.initUndistortRectifyMap(self.mtx, self.dist, None, self.newcameramtx, (w, h), cv2.CV_32FC1)
+
+        # --- Blob Detector Settings ---
+        params = cv2.SimpleBlobDetector_Params()
+        params.filterByArea = True
+        params.minArea = 500
+        params.filterByCircularity = True
+        params.minCircularity = 0.45
+        params.filterByInertia = True
+        params.minInertiaRatio = 0.3
+        self.detector = cv2.SimpleBlobDetector_create(params)
+
+        self.colors = {
+            'red': {'lower1': (0, 10, 80), 'upper1': (10, 255, 255), 'lower2': (170, 10, 80), 'upper2': (180, 255, 255)},
+            'blue': {'lower1': (95, 0, 127), 'upper1': (103, 255, 255)},
+            'white': {'lower1': (0, 0, 200), 'upper1': (180, 35, 255)}
+        }
+
+        self.target_color = 'red'
+        self.TARGET_X = 0.0
+        self.TARGET_Y = 34.0
+        self.K_P_TURN = 0.02
+        self.K_P_DRIVE = 0.02
         
-        # Snapshot of the global frame when the mission begins
-        self.origin_pose = (0.0, 0.0, 0.0) 
         self.last_drive = 0.0
         self.last_turn = 0.0
 
-    def get_relative_pose(self):
-        """
-        Calculates the current pose relative to the start orientation.
-        Transforms Global coordinates into the Local frame.
-        """
-        # Current Global Position
-        gx, gy, gh = self.world.get_pose()
-        # Starting Global Position (the Origin)
-        ox, oy, oh = self.origin_pose
+        # --- Lost Frame Logic ---
+        self.lost_frame_count = 0
+        self.MAX_LOST_FRAMES = 10 # Number of frames to wait before stopping
 
-        # 1. Global Difference
-        dx = gx - ox
-        dy = gy - oy
+    def get_world_coords(self, u, v):
+        pixel_vector = np.array([u, v, 1.0], dtype=np.float32).reshape(3, 1)
+        transformed = np.dot(self.H, pixel_vector)
+        world_x = transformed[0] / transformed[2]
+        world_y = transformed[1] / transformed[2]
+        return float(world_x), float(world_y)
 
-        # 2. Rotation Matrix Transformation
-        # Rotates the global coordinates back by the starting angle 'oh'
-        # so that 'forward' is always the robot's initial X-axis.
-        rel_x = dx * math.cos(-oh) - dy * math.sin(-oh)
-        rel_y = dx * math.sin(-oh) + dy * math.cos(-oh)
+    def calculate_control_signals(self, current_x, current_y):
+        error_x = self.TARGET_X - current_x 
+        error_y = current_y - self.TARGET_Y
+
+        turn = np.clip(error_x * self.K_P_TURN, -0.6, 0.6)
+        drive = np.clip(error_y * self.K_P_DRIVE, -0.6, 0.6)
+
+        if abs(error_x) < 1.0: turn = 0.0
+        if abs(error_y) < 1.5: drive = 0.0
+
+        return round(float(turn), 2), round(float(drive), 2)
+
+    def detect_ball(self, frame, color_name):
+        blurred = cv2.GaussianBlur(frame, (11, 11), 0)
+        hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+        c = self.colors.get(color_name)
         
-        # SWAPPED assignment (if X and Y are interchanged)
-        # rel_x = dx * math.sin(-oh) + dy * math.cos(-oh)
-        # rel_y = dx * math.cos(-oh) - dy * math.sin(-oh)
-
-        # To flip an axis, multiply the entire result by -1
-        # rel_x = -1 * (dx * math.cos(-oh) - dy * math.sin(-oh)) # Flipped Forward/Backward
-        # rel_y = -1 * (dx * math.sin(-oh) + dy * math.cos(-oh)) # Flipped Left/Right
+        mask = cv2.inRange(hsv, c['lower1'], c['upper1'])
+        if 'lower2' in c:
+            mask2 = cv2.inRange(hsv, c['lower2'], c['upper2'])
+            mask = cv2.bitwise_or(mask, mask2)
         
-        # 3. Relative Heading
-        rel_h = (gh - oh + math.pi) % (2 * math.pi) - math.pi
-        # To this (invert the subtraction order):
-        # rel_h = (oh - gh + math.pi) % (2 * math.pi) - math.pi
-
-        return rel_x, rel_y, rel_h
-
-    def calculate_signals(self, tx, ty, is_intermediate=False):
-        """Standard P-Controller for relative navigation."""
-        rx, ry, rh = self.get_relative_pose()
+        mask = cv2.erode(mask, None, iterations=2)
+        mask = cv2.dilate(mask, None, iterations=2)
         
-        dx = tx - rx
-        dy = ty - ry
-        dist = math.sqrt(dx**2 + dy**2)
-        
-        # Use 20cm tolerance for points in a path to allow 'curved' flow
-        tol = 0.2 if is_intermediate else self.DIST_TOL
-        if dist < tol:
-            return 0.0, 0.0, True
-
-        target_angle = math.atan2(dy, dx)
-        angle_error = (target_angle - rh + math.pi) % (2 * math.pi) - math.pi
-
-        # Rotate in place if the point is more than 60 degrees away
-        if abs(angle_error) > math.pi / 3:
-            drive = 0.0
-        else:
-            drive = np.clip(dist * self.K_P_LIN, -self.MAX_LIN, self.MAX_LIN)
-        
-        turn = np.clip(angle_error * self.K_P_ANG, -self.MAX_ANG, self.MAX_ANG)
-        
-        return round(float(drive), 2), round(float(turn), 2), False
-
-    def align_final_heading(self, target_rh):
-        """Final rotation to reach the desired approach vector."""
-        while self.running:
-            _, _, rh = self.get_relative_pose()
-            error = (target_rh - rh + math.pi) % (2 * math.pi) - math.pi
-
-            if abs(error) < self.ANG_TOL:
-                break
-
-            turn = np.clip(error * self.K_P_ANG, -self.MAX_ANG, self.MAX_ANG)
-            self.send_rc(0.0, turn)
-            time.sleep(0.05)
-
-    def send_rc(self, drive, turn):
-        """Publishes to MQTT only on change."""
-        if drive != self.last_drive or turn != self.last_turn:
-            service.send(self.MQTT_TOPIC_DRIVE, f"rc {drive:.1f} {turn:.1f} {time.time()}")
-            self.last_drive, self.last_turn = drive, turn
+        keypoints = self.detector.detect(~mask)
+        if keypoints:
+            best_kp = max(keypoints, key=lambda x: x.size)
+            return best_kp.pt 
+        return None
 
     def run(self):
-        # Capture the current global state as (0,0,0) for this mission
-        self.origin_pose = self.world.get_pose()
+        # Initial Gripper State: Open
+        service.send(self.MQTT_TOPIC_GRIPPER, f"servo 1 200 100 {time.time()}")
+        service.send(self.MQTT_TOPIC_GRIPPER, f"servo 2 0 500 {time.time()}")
         
-        for i, (tx, ty) in enumerate(self.waypoints):
-            is_last = (i == len(self.waypoints) - 1)
-            reached = False
-            
-            while self.running and not reached:
-                d, t, reached = self.calculate_signals(tx, ty, is_intermediate=not is_last)
-                if not reached:
-                    self.send_rc(d, t)
-                time.sleep(0.05)
+        while self.running:
+            if cam.useCam:
+                ok, frame, _ = cam.getImage()
+                if ok:
+                    # 1. Optimized Undistort using Remap
+                    frame_cal = cv2.remap(frame, self.mapx, self.mapy, cv2.INTER_LINEAR)
+                    rx, ry, rw, rh = self.roi
+                    frame_cal = frame_cal[ry:ry + rh, rx:rx + rw]
+                    
+                    # 2. Crop to Floor
+                    crop_y_start = int(frame_cal.shape[0]/3)
+                    roi_frame = frame_cal[crop_y_start:, :]
 
-        # After points are reached, check if we need a final orientation
-        if self.running and self.final_h is not None:
-            self.align_final_heading(self.final_h)
+                    # 3. Detection
+                    coords = self.detect_ball(roi_frame, self.target_color)
 
-        self.stop_robot()
+                    target_drive, target_turn = 0.0, 0.0
 
-    def stop_robot(self):
+                    if coords:
+                        self.lost_frame_count = 0 # Reset counter
+                        u, v = coords
+                        v_world_space = v + crop_y_start 
+                        
+                        world_x, world_y = self.get_world_coords(u, v_world_space)
+                        target_turn, target_drive = self.calculate_control_signals(world_x, world_y)
+
+                        if target_drive == 0.0:
+                            # Close gripper and notify, but don't break the loop if you want continuous operation
+                            service.send(self.MQTT_TOPIC_GRIPPER, f"servo 2 -1000 500 {time.time()}")
+                            service.send(self.MQTT_TOPIC_DRIVE, f"rc 0.0 0.0 {time.time()}")
+                            print("Target reached. Closing gripper.")
+                    else:
+                        self.lost_frame_count += 1
+                        
+                        # Only stop/decelerate if we've lost the ball for several frames
+                        if self.lost_frame_count > self.MAX_LOST_FRAMES:
+                            target_turn = round(max(0, self.last_turn - 0.1) if self.last_turn > 0 else min(0, self.last_turn + 0.1), 2)
+                            target_drive = round(max(0, self.last_drive - 0.1) if self.last_drive > 0 else min(0, self.last_drive + 0.1), 2)
+                        else:
+                            # Keep doing what we were doing (maintain last command)
+                            target_drive, target_turn = self.last_drive, self.last_turn
+
+                    # 4. MQTT Gating: Only send if values changed
+                    if target_drive != self.last_drive or target_turn != self.last_turn:
+                        drive_cmd = f"rc {target_drive:.1f} {target_turn:.1f}"
+                        service.send(self.MQTT_TOPIC_DRIVE, drive_cmd)
+                        self.last_drive, self.last_turn = target_drive, target_turn
+
+                    # 5. Update shared world state
+                    with self.world.lock:
+                        self.world.image = frame_cal
+                        self.world.ball_coords = coords
+
+            # Sleep slightly to allow other threads to breathe
+            time.sleep(0.01)
+
+    def stop(self):
         self.running = False
         service.send(self.MQTT_TOPIC_DRIVE, f"rc 0.0 0.0 {time.time()}")
-
-# usage example..
-# import math
-# from drive_to_point import DriveToPoint
-# from core.world_model import WorldModel
-
-# world = WorldModel()
-
-# # --- SCENARIO 1: Simple Forward Drive ---
-# # Drive 1 meter straight ahead and stop
-# mission1 = DriveToPoint(world, target_x=1.0, target_y=0.0)
-# mission1.start()
-# mission1.join() # Wait for it to finish
-
-# # --- SCENARIO 2: S-Curve / Path Following ---
-# # Drive through a series of relative points
-# # Because they are intermediate points, the robot will curve through them
-# path = [
-#     (0.5, 0.5),   # 50cm forward, 50cm left
-#     (1.0, 0.0),   # 1m forward total, back to center line
-#     (1.5, -0.5)   # 1.5m forward, 50cm right
-# ]
-# mission2 = DriveToPoint(world, path=path)
-# mission2.start()
-# mission2.join()
-
-# # --- SCENARIO 3: Precise Arrival with Orientation ---
-# # Drive 50cm forward and 50cm left, 
-# # then rotate to face exactly backwards (180 degrees / pi)
-# target_h = math.pi 
-# mission3 = DriveToPoint(world, target_x=0.5, target_y=0.5, final_h=target_h)
-# mission3.start()
-# mission3.join()
