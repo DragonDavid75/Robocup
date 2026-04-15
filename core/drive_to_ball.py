@@ -20,8 +20,15 @@ class DriveToBallTask(threading.Thread):
         self.world_points = np.array([(-15, 30), (15, 30), (-15, 60), (15, 60), (0, 30), (0, 45), (0, 60), (-15, 45), (15, 45)], dtype=np.float32)
         self.H, _ = cv2.findHomography(self.pixel_points, self.world_points, cv2.RANSAC, 5.0)
 
-        self.mtx = np.matrix([[642.21815902, 0., 406.71091241], [0., 639.62546619, 292.02420168], [0., 0., 1.]])
-        self.dist = np.matrix([[0.02674745, -0.10674703, -0.00277349, 0.0034295, 0.16937755]])
+        # Using np.array for matrices
+        self.mtx = np.array([[642.21815902, 0., 406.71091241], [0., 639.62546619, 292.02420168], [0., 0., 1.]])
+        self.dist = np.array([[0.02674745, -0.10674703, -0.00277349, 0.0034295, 0.16937755]])
+
+        # --- PRE-CALCULATE UNDISTORTION MAPS ---
+        # Assuming standard resolution 800x600; adjust if your camera output differs
+        w, h = 800, 600 
+        self.newcameramtx, self.roi = cv2.getOptimalNewCameraMatrix(self.mtx, self.dist, (w, h), 1, (w, h))
+        self.mapx, self.mapy = cv2.initUndistortRectifyMap(self.mtx, self.dist, None, self.newcameramtx, (w, h), cv2.CV_32FC1)
 
         # --- Blob Detector Settings ---
         params = cv2.SimpleBlobDetector_Params()
@@ -45,9 +52,12 @@ class DriveToBallTask(threading.Thread):
         self.K_P_TURN = 0.02
         self.K_P_DRIVE = 0.02
         
-        # Track last sent commands to avoid "jitter" from spamming MQTT
         self.last_drive = 0.0
         self.last_turn = 0.0
+
+        # --- Lost Frame Logic ---
+        self.lost_frame_count = 0
+        self.MAX_LOST_FRAMES = 10 # Number of frames to wait before stopping
 
     def get_world_coords(self, u, v):
         pixel_vector = np.array([u, v, 1.0], dtype=np.float32).reshape(3, 1)
@@ -96,12 +106,10 @@ class DriveToBallTask(threading.Thread):
             if cam.useCam:
                 ok, frame, _ = cam.getImage()
                 if ok:
-                    # 1. Undistort
-                    h, w = frame.shape[:2]
-                    newcameramtx, roi = cv2.getOptimalNewCameraMatrix(self.mtx, self.dist, (w, h), 1, (w, h))
-                    frame_cal = cv2.undistort(frame, self.mtx, self.dist, None, newcameramtx)
-                    x, y, w, h = roi
-                    frame_cal = frame_cal[y:y + h, x:x + w]
+                    # 1. Optimized Undistort using Remap
+                    frame_cal = cv2.remap(frame, self.mapx, self.mapy, cv2.INTER_LINEAR)
+                    rx, ry, rw, rh = self.roi
+                    frame_cal = frame_cal[ry:ry + rh, rx:rx + rw]
                     
                     # 2. Crop to Floor
                     crop_y_start = int(frame_cal.shape[0]/3)
@@ -113,24 +121,28 @@ class DriveToBallTask(threading.Thread):
                     target_drive, target_turn = 0.0, 0.0
 
                     if coords:
+                        self.lost_frame_count = 0 # Reset counter
                         u, v = coords
-                        # Adjust v based on where the ROI started in the calibrated frame
                         v_world_space = v + crop_y_start 
                         
                         world_x, world_y = self.get_world_coords(u, v_world_space)
                         target_turn, target_drive = self.calculate_control_signals(world_x, world_y)
 
                         if target_drive == 0.0:
-                            # Close gripper and Stop
+                            # Close gripper and notify, but don't break the loop if you want continuous operation
                             service.send(self.MQTT_TOPIC_GRIPPER, f"servo 2 -1000 500 {time.time()}")
                             service.send(self.MQTT_TOPIC_DRIVE, f"rc 0.0 0.0 {time.time()}")
                             print("Target reached. Closing gripper.")
-                            self.running = False
-                            break
                     else:
-                        # Deceleration logic if ball is lost (smooth stop)
-                        target_turn = round(max(0, self.last_turn - 0.1) if self.last_turn > 0 else min(0, self.last_turn + 0.1), 2)
-                        target_drive = round(max(0, self.last_drive - 0.1) if self.last_drive > 0 else min(0, self.last_drive + 0.1), 2)
+                        self.lost_frame_count += 1
+                        
+                        # Only stop/decelerate if we've lost the ball for several frames
+                        if self.lost_frame_count > self.MAX_LOST_FRAMES:
+                            target_turn = round(max(0, self.last_turn - 0.1) if self.last_turn > 0 else min(0, self.last_turn + 0.1), 2)
+                            target_drive = round(max(0, self.last_drive - 0.1) if self.last_drive > 0 else min(0, self.last_drive + 0.1), 2)
+                        else:
+                            # Keep doing what we were doing (maintain last command)
+                            target_drive, target_turn = self.last_drive, self.last_turn
 
                     # 4. MQTT Gating: Only send if values changed
                     if target_drive != self.last_drive or target_turn != self.last_turn:
@@ -143,7 +155,8 @@ class DriveToBallTask(threading.Thread):
                         self.world.image = frame_cal
                         self.world.ball_coords = coords
 
-            # time.sleep(0.05) # ~20 FPS is plenty for control
+            # Sleep slightly to allow other threads to breathe
+            time.sleep(0.01)
 
     def stop(self):
         self.running = False
