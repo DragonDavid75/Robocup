@@ -4,14 +4,14 @@ import math
 import numpy as np
 from mqtt_python.uservice import service
 
-class DriveToTask(threading.Thread):
+class DriveToPoint(threading.Thread):
     def __init__(self, world, target_x=None, target_y=None, path=None, final_h=None):
         """
-        :param world: The WorldModel instance
+        :param world: The WorldModel instance providing the pose
         :param target_x: X coordinate for single point or pose arrival
         :param target_y: Y coordinate for single point or pose arrival
         :param path: List of (x, y) tuples for curved path following
-        :param final_h: Final heading in radians (Scenario 3)
+        :param final_h: Final heading in radians (Approach Vector)
         """
         super().__init__()
         self.world = world
@@ -20,62 +20,61 @@ class DriveToTask(threading.Thread):
         # --- MQTT Setup ---
         self.MQTT_TOPIC_DRIVE = "robobot/cmd/ti"
 
-        # --- Controller Settings ---
-        self.K_P_LIN = 0.5        # Linear speed gain
-        self.K_P_ANG = 1.2        # Angular speed gain
-        self.DIST_TOL = 0.05      # Arrival tolerance (5cm)
-        self.ANG_TOL = 0.08       # Angle tolerance (~4.5 degrees)
-        self.MAX_LIN = 0.5        # Max linear speed (rc 0.5)
-        self.MAX_ANG = 0.6        # Max angular speed (rc 0.6)
+        # --- Controller Gains ---
+        self.K_P_LIN = 0.5        # Speed based on distance
+        self.K_P_ANG = 1.2        # Steering speed based on angle error
+        self.DIST_TOL = 0.05      # 5cm arrival tolerance
+        self.ANG_TOL = 0.08       # ~4.5 degree angle tolerance
+        self.MAX_LIN = 0.5        # rc max 0.5
+        self.MAX_ANG = 0.6        # rc max 0.6
 
-        # --- Mission Logic ---
+        # --- Mission Configuration ---
         self.final_h = final_h
         if path:
             self.waypoints = path
-            self.mode = "PATH"
+            self.mission_type = "PATH"
         else:
             self.waypoints = [(target_x, target_y)]
-            self.mode = "POINT"
+            self.mission_type = "POINT"
 
         self.last_drive = 0.0
         self.last_turn = 0.0
 
     def normalize_angle(self, angle):
-        """Keep angle between -pi and pi."""
+        """Wraps angle to [-pi, pi]."""
         return (angle + math.pi) % (2 * math.pi) - math.pi
 
-    def calculate_control(self, tx, ty, is_intermediate=False):
-        """Calculates rc commands to reach a target coordinate."""
+    def calculate_drive_signals(self, tx, ty, is_intermediate=False):
+        """Logic to calculate rc drive and turn values."""
         cx, cy, ch = self.world.get_pose()
         
         dx = tx - cx
         dy = ty - cy
         dist = math.sqrt(dx**2 + dy**2)
         
-        # If we are at the point, stop linear movement
-        # Intermediate points have a larger tolerance for a "curved" feel
+        # Determine tolerance based on whether we need to stop or just 'pass through'
         current_tol = 0.2 if is_intermediate else self.DIST_TOL
+        
         if dist < current_tol:
             return 0.0, 0.0, True
 
-        # Calculate angle to target
+        # Steering Logic
         target_angle = math.atan2(dy, dx)
         angle_error = self.normalize_angle(target_angle - ch)
 
-        # Logic: If the angle error is too large, turn in place first
+        # If pointing the wrong way, rotate in place first
         if abs(angle_error) > math.pi / 3:
             drive = 0.0
         else:
-            # Scale linear speed by distance
             drive = np.clip(dist * self.K_P_LIN, -self.MAX_LIN, self.MAX_LIN)
         
         turn = np.clip(angle_error * self.K_P_ANG, -self.MAX_ANG, self.MAX_ANG)
         
         return round(float(drive), 2), round(float(turn), 2), False
 
-    def rotate_to_heading(self, target_h):
-        """Rotates the robot in place to a specific heading."""
-        print(f"Rotating to approach vector: {target_h}")
+    def align_to_approach_vector(self, target_h):
+        """Final rotation to match the desired orientation."""
+        print(f"Aligning to final heading: {target_h:.2f} rad")
         while self.running:
             _, _, ch = self.world.get_pose()
             angle_error = self.normalize_angle(target_h - ch)
@@ -84,58 +83,53 @@ class DriveToTask(threading.Thread):
                 break
 
             turn = np.clip(angle_error * self.K_P_ANG, -self.MAX_ANG, self.MAX_ANG)
-            self.send_drive(0.0, turn)
+            self.execute_rc_command(0.0, turn)
             time.sleep(0.05)
 
-    def send_drive(self, drive, turn):
-        """Gated MQTT sender to prevent flooding."""
+    def execute_rc_command(self, drive, turn):
+        """Sends MQTT command only if the values have changed."""
         if drive != self.last_drive or turn != self.last_turn:
-            # Timestamp included for robot command sync
             service.send(self.MQTT_TOPIC_DRIVE, f"rc {drive:.1f} {turn:.1f} {time.time()}")
             self.last_drive, self.last_turn = drive, turn
 
     def run(self):
-        print(f"Starting Navigation Task: Mode={self.mode}")
+        print(f"Executing DriveToPoint: {self.mission_type}")
         
+        # Iterate through coordinates
         for i, (tx, ty) in enumerate(self.waypoints):
             is_last = (i == len(self.waypoints) - 1)
             reached = False
             
-            print(f"Targeting: ({tx}, {ty})")
-            
             while self.running and not reached:
-                # Calculate commands. If is_intermediate=True, we use loose tolerance for curves.
-                d, t, reached = self.calculate_control(tx, ty, is_intermediate=not is_last)
+                # Use 'is_intermediate' to allow curved motion between path points
+                d, t, reached = self.calculate_drive_signals(tx, ty, is_intermediate=not is_last)
                 
                 if not reached:
-                    self.send_drive(d, t)
+                    self.execute_rc_command(d, t)
                 
-                time.sleep(0.05) # ~20Hz control loop
+                time.sleep(0.05) # 20Hz Loop
 
-        # Scenario 3: Final Heading (Approach Vector)
+        # If a specific heading was requested (Approach Vector)
         if self.running and self.final_h is not None:
-            self.rotate_to_heading(self.final_h)
+            self.align_to_approach_vector(self.final_h)
 
-        # Mission Complete
-        self.stop()
-        print("Navigation task complete.")
+        self.stop_robot()
+        print("DriveToPoint mission finished.")
 
-    def stop(self):
+    def stop_robot(self):
         self.running = False
         service.send(self.MQTT_TOPIC_DRIVE, f"rc 0.0 0.0 {time.time()}")
 
-# --- Example Usage ---
-# from core.world_model import WorldModel
-# world = WorldModel()
+# --- How to use in your main script ---
+# from drive_to_point import DriveToPoint
 
-# 1. Drive to X, Y
-# task = DriveToTask(world, target_x=1.5, target_y=0.0)
+# Example 1: Single Point
+# mission = DriveToPoint(world, target_x=1.0, target_y=0.5)
 
-# 2. Drive curved path
-# path = [(0.5, 0.5), (1.0, 0.0), (1.5, 0.5)]
-# task = DriveToTask(world, path=path)
+# Example 2: Curved Path
+# mission = DriveToPoint(world, path=[(0.5, 0.5), (1.0, 0.0), (1.5, -0.5)])
 
-# 3. Drive to X, Y with Approach Vector (e.g., face North / pi/2)
-# task = DriveToTask(world, target_x=1.0, target_y=1.0, final_h=math.pi/2)
+# Example 3: Point with Approach Vector (Orientation)
+# mission = DriveToPoint(world, target_x=0.0, target_y=0.0, final_h=1.57) # Face North
 
-# task.start()
+# mission.start()
