@@ -33,10 +33,10 @@ class TimerFirstTask(BaseTask):
             if not self.motion_controller.is_busy():
                 self.motion_controller.drive_distance(2.7, 0.4)
                 self.state = 3
-
+        #Turn around to go away from timer back to the white line
         elif self.state == 3:
             if not self.motion_controller.is_busy():
-                self.motion_controller.turn_in_place(3.14)
+                self.motion_controller.turn_in_place(2.90)
                 self.state = 4
 
         elif self.state == 4:
