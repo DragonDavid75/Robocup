@@ -34,6 +34,8 @@ class MissionManager:
     def build_mission(self):
         #self.task_queue.append(BallTask(self.world, self.motion_controller, self.servo_controller))
         self.task_queue.append(Firstball(self.world, self.motion_controller, self.servo_controller, distance=1.0, velocity=0.2))
+        # self.task_queue.append(DriveToPointTask(self.world, self.motion_controller, self.servo_controller, target_x=1.0, target_y=1.0))  # Example: drive 1m forward
+
 
     def start_next_task(self):
         if len(self.task_queue) == 0:
