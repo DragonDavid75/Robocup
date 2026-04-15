@@ -3,11 +3,11 @@ import time
 import math
 from mqtt_python.uservice import service
 from mqtt_python.sedge import edge
-
+import typing
 
 class MotionController(threading.Thread):
 
-    def __init__(self, world, robot, line_follower, ball_task):
+    def __init__(self, world, robot, line_follower, ball_task=None):
         super().__init__()
         self.world = world
         self.robot = robot
@@ -44,7 +44,8 @@ class MotionController(threading.Thread):
 
             elif self.current_task == 'drive_to_ball':
                 self._handle_drive_to_ball_mission()
-
+            elif self.current_task == 'line_until_loss':
+                self._handle_line_until_loss_mission()
             elif service.stop:
                 print("% MotionController: Emergency stop activated!")
                 self.stop()
@@ -126,7 +127,11 @@ class MotionController(threading.Thread):
             print("% MotionController: Circle drive complete.")
             self.robot.stop()
             self.current_task = None
-
+    def _get_pose3(self) -> tuple[float, float, float]:
+        pose = self.world.get_pose()
+        if not isinstance(pose, tuple) or len(pose) < 3:
+            return (0.0, 0.0, 0.0)
+        return typing.cast(tuple[float, float, float], pose)
     def _handle_drive_arc_mission(self):
         start_angle = self.task_params.get("start_angle", 0.0)
         target_delta = self.task_params.get("target_delta", 0.0)
@@ -141,7 +146,21 @@ class MotionController(threading.Thread):
             print("% MotionController: Arc complete.")
             self.robot.stop()
             self.current_task = None
+    def _handle_line_until_loss_mission(self):
+        """Monitors line validity and stops after line is lost for too long."""
+        current_time = time.time()
 
+        if edge.lineValid or edge.lineValidCnt > 0:
+            self.task_params["last_valid_time"] = current_time
+
+        last_valid_time = float(self.task_params.get("last_valid_time", current_time) or current_time)
+        loss_timeout = float(self.task_params.get("loss_timeout", 0.3) or 0.3)
+
+        if current_time - last_valid_time > loss_timeout:
+            print("% MotionController: Line loss detected.")
+            self.line_follower.stop_following()
+            self.robot.stop()
+            self.current_task = None
     def _handle_drive_to_line_mission(self):
         if edge.crossingLine:
             print("% MotionController: Line detected!")
@@ -153,7 +172,18 @@ class MotionController(threading.Thread):
             print("% MotionController: Ball reached!")
             self.robot.stop()
             self.current_task = None
-
+    def follow_until_line_loss(self, velocity, action="STRAIGHT", loss_timeout=0.3):
+        """
+        Follows the line until the line has been lost for longer than loss_timeout.
+        """
+        print(f"% MotionController: Following line until loss at {velocity}")
+        self.task_params = {
+            "last_valid_time": time.time(),
+            "loss_timeout": loss_timeout,
+        }
+        self.robot.reset_trip()
+        self.line_follower.start_following(velocity, action)
+        self.current_task = 'line_until_loss'
     # --- High Level Commands ---
 
     """
