@@ -13,7 +13,7 @@ class DriveToPointTask(BaseTask):
         target_x=0.0,
         target_y=0.0,
     ):
-        super().__init__(world, motion_controller)
+        super().__init__(world, motion_controller, servo_controller)
 
         self.servo_controller = servo_controller
 
@@ -65,7 +65,7 @@ class DriveToPointTask(BaseTask):
         # This assumes your controller uses:
         # +angle = right turn
         # -angle = left turn
-        self.turn_angle_deg = math.degrees(
+        self.turn_angle_deg = -math.degrees(
             math.atan2(self.target_y, self.target_x)
         )
 
@@ -89,10 +89,7 @@ class DriveToPointTask(BaseTask):
                     f"[TASK] Turning {direction} by "
                     f"{abs(self.turn_angle_deg):.2f} deg"
                 )
-                self.motion_controller.turn_angle(
-                    self.turn_angle_deg,
-                    self.turn_speed
-                )
+                self.motion_controller.turn_in_place(math.radians(self.turn_angle_deg))
                 self.state = 1
             else:
                 self.state = 2
@@ -128,10 +125,7 @@ class DriveToPointTask(BaseTask):
                     f"[TASK] Turning back {direction} by "
                     f"{abs(self.return_angle_deg):.2f} deg"
                 )
-                self.motion_controller.turn_angle(
-                    self.return_angle_deg,
-                    self.turn_speed
-                )
+                self.motion_controller.turn_in_place(math.radians(self.return_angle_deg))
                 self.state = 5
             else:
                 self.state = 6
