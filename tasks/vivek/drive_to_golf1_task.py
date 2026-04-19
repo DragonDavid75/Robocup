@@ -8,6 +8,12 @@ import numpy as np
 from mqtt_python.scam import cam
 from mqtt_python.uservice import service
 
+from tasks.base_task import BaseTask, TaskStatus
+from tasks.base_tasks.drive_dist import DriveDistTask
+from tasks.base_tasks.drive_dist_line import DriveDistLineTask
+from mqtt_python.spose import pose
+import time
+
 class DriveToBallTask(BaseTask):
     def __init__(
         self,
@@ -137,6 +143,7 @@ class DriveToBallTask(BaseTask):
 
     def start(self):
         super().start()
+        print("[TASK] GolfBallsTask started")
         self.state = 0
         
 
@@ -199,12 +206,24 @@ class DriveToBallTask(BaseTask):
     def update(self):
 
         if self.state == 0:
-            if not self.detect_ball_cam:
-                self.state = 7
-            else:
-                self.state = 1
-
+            self.servo_controller.servo_control(1, -800, 300)
+            self.motion_controller.follow_for_distance(0.3, 0.6, action="LEFT")
+            self.state = 1
+        #STATE 1: Drive to ball
         elif self.state == 1:
+            self.servo_controller.servo_control(1, 200, 300)
+            self.servo_controller.servo_control(2, -1000, 300)
+            if not self.motion_controller.is_busy():
+                self.motion_controller.follow_for_distance(0.7, 0.2)
+                self.state = 2
+
+        if self.state == 2:
+            if not self.detect_ball_cam:
+                self.state = 9
+            else:
+                self.state = 3
+
+        elif self.state == 3:
 
             if abs(self.turn_angle_deg) > 1e-6:
                 direction = "right" if self.turn_angle_deg > 0 else "left"
@@ -213,16 +232,16 @@ class DriveToBallTask(BaseTask):
                     f"{abs(self.turn_angle_deg):.2f} deg"
                 )
                 self.motion_controller.turn_in_place(math.radians(self.turn_angle_deg))
-                self.state = 2
+                self.state = 4
             else:
-                self.state = 3
+                self.state = 5
 
-        elif self.state == 2:
+        elif self.state == 4:
             if not self.motion_controller.is_busy():
-                self.state = 3
+                self.state = 5
 
         # Step 2: drive along the hypotenuse to the point
-        elif self.state == 3:
+        elif self.state == 5:
             if self.drive_distance_m > 1e-6:
                 print(
                     f"[TASK] Driving to point by "
@@ -232,23 +251,6 @@ class DriveToBallTask(BaseTask):
                     self.drive_distance_m,
                     self.drive_speed
                 )
-                self.state = 4
-            else:
-                self.state = 5
-
-        elif self.state == 4:
-            if not self.motion_controller.is_busy():
-                self.state = 5
-
-        # Step 3: turn back to the original heading
-        elif self.state == 5:
-            if abs(self.return_angle_deg) > 1e-6:
-                direction = "right" if self.return_angle_deg > 0 else "left"
-                print(
-                    f"[TASK] Turning back {direction} by "
-                    f"{abs(self.return_angle_deg):.2f} deg"
-                )
-                self.motion_controller.turn_in_place(math.radians(self.return_angle_deg))
                 self.state = 6
             else:
                 self.state = 7
@@ -257,7 +259,24 @@ class DriveToBallTask(BaseTask):
             if not self.motion_controller.is_busy():
                 self.state = 7
 
+        # Step 3: turn back to the original heading
         elif self.state == 7:
+            if abs(self.return_angle_deg) > 1e-6:
+                direction = "right" if self.return_angle_deg > 0 else "left"
+                print(
+                    f"[TASK] Turning back {direction} by "
+                    f"{abs(self.return_angle_deg):.2f} deg"
+                )
+                self.motion_controller.turn_in_place(math.radians(self.return_angle_deg))
+                self.state = 8
+            else:
+                self.state = 9
+
+        elif self.state == 8:
+            if not self.motion_controller.is_busy():
+                self.state = 9
+
+        elif self.state == 9:
             print("[TASK] DriveToPoint completed")
             return TaskStatus.DONE
 
