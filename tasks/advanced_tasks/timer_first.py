@@ -38,20 +38,26 @@ class TimerFirstTask(BaseTask):
             if not self.motion_controller.is_busy():
                 self.motion_controller.turn_in_place(2.90)
                 self.state = 4
-
+        #Go to the white line
         elif self.state == 4:
             if not self.motion_controller.is_busy():
                 self.motion_controller.drive_distance(2.7, 0.4)
                 self.state = 5
-
+        #In the junction turn left to continue on the white line
         elif self.state == 5:
             if not self.motion_controller.is_busy():
                 self.motion_controller.turn_in_place(-1.57)
                 self.state = 6
+        #Go 9.5 m forward and turn left in the next junction, then continue 60 cm forward
+        # elif self.state == 6:
+        #     if not self.motion_controller.is_busy():
+        #         self.motion_controller.follow_for_distance(9.5, 0.6, action="LEFT")
+        #         self.state = 7
 
+        #Go 9.5 m forward and stop before the next junction
         elif self.state == 6:
             if not self.motion_controller.is_busy():
-                self.motion_controller.follow_for_distance(9.5, 0.6, action="LEFT")
+                self.motion_controller.follow_for_distance(9.2, 0.6)
                 self.state = 7
 
         elif self.state == 7:
