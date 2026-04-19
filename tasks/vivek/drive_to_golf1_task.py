@@ -256,6 +256,7 @@ class DriveToBallTask(BaseTask):
                 self.state = 7
 
         elif self.state == 6:
+            self.servo_controller.servo_control(2, 0, 300)
             if not self.motion_controller.is_busy():
                 self.state = 7
 
