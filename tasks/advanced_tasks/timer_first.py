@@ -53,17 +53,10 @@ class TimerFirstTask(BaseTask):
                 self.motion_controller.turn_in_place(-1.57)
                 self.state = 6
         #Go 9.5 m forward and turn left in the next junction, then continue 60 cm forward
-        # elif self.state == 6:
-        #     if not self.motion_controller.is_busy():
-        #         self.motion_controller.follow_for_distance(9.5, 0.6, action="LEFT")
-        #         self.state = 7
-
-        #Go 9.5 m forward and stop before the next junction
         elif self.state == 6:
             if not self.motion_controller.is_busy():
-                self.motion_controller.follow_for_distance(9.2, 0.6)
+                self.motion_controller.follow_for_distance(9.5, 0.6, action="LEFT")
                 self.state = 7
-
         elif self.state == 7:
             if not self.motion_controller.is_busy():
                 print("[TASK] TimerFirstTask completed")
