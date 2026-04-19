@@ -1,3 +1,6 @@
+#First one of the tasks
+#Goes to the rounabout, turns right and follows the roundabout until it can exit, 
+# then turns right again to exit the roundabout and continues on the white line for 25 cm before stopping
 # tasks/advanced_tasks/start_roundabout.py
 
 from tasks.base_task import BaseTask, TaskStatus

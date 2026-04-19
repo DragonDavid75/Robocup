@@ -1,3 +1,7 @@
+#Second of the tasks
+#Starts right after the rounabout, goes to the timer, 
+# turns around and goes back to the white line, 
+# then continues on the white line for 9.5 m before stopping
 # tasks/timer_first.py
 
 from tasks.base_task import BaseTask, TaskStatus
