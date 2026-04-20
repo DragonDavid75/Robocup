@@ -7,6 +7,7 @@ from tasks.base_tasks.drive_dist_line import DriveDistLineTask
 from tasks.base_tasks.small_turn import SmallTurnTask
 from tasks.advanced_tasks.bonus_time import BonusTimeTask
 from tasks.advanced_tasks.timer_first import TimerFirstTask
+from tasks.advanced_tasks.start_roundabout import StartRoundaboutTask
 from tasks.advanced_tasks.first_ball import FirstBallTask
 from tasks.advanced_tasks.test_task import TestTask
 from tasks.advanced_tasks.first_golf import Firstball
