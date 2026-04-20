@@ -55,10 +55,21 @@ class TimerFirstTask(BaseTask):
         #Go 9.5 m forward and turn left in the next junction, then continue 60 cm forward
         elif self.state == 6:
             if not self.motion_controller.is_busy():
-                self.motion_controller.follow_for_distance(9.5, 0.6, action="LEFT")
+                self.motion_controller.follow_for_distance(8, 0.6, action="LEFT")
+                # self.motion_controller.follow_for_distance(1.5, 0.3, action="LEFT")
                 self.state = 7
+
         elif self.state == 7:
             if not self.motion_controller.is_busy():
+                # self.motion_controller.follow_for_distance(8, 0.6, action="LEFT")
+                self.motion_controller.follow_for_distance(1.5, 0.3, action="LEFT")
+                self.state = 8
+
+        elif self.state == 8:
+            if not self.motion_controller.is_busy():
+                self.servo_controller.servo_control(1, 200, 500)
+                self.servo_controller.servo_control(2, 0, 300)
+                time.sleep(0.5)
                 print("[TASK] TimerFirstTask completed")
                 return TaskStatus.DONE
 
