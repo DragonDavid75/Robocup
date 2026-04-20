@@ -74,8 +74,8 @@ def detect_hole_on_stream(stream_url: str) -> None:
             break
 
         height, width = frame.shape[:2]
-        crop_w = int(width * 3 / 4)
-        crop_h = int(height * 1 / 2)
+        crop_w = int(width * 1)
+        crop_h = int(height * 1)
         x0 = (width - crop_w) // 2
         y0 = (height - crop_h) // 2
         crop = frame[y0 : y0 + crop_h, x0 : x0 + crop_w]

@@ -8,12 +8,12 @@ from tasks.base_tasks.small_turn import SmallTurnTask
 from tasks.advanced_tasks.bonus_time import BonusTimeTask
 from tasks.advanced_tasks.timer_first import TimerFirstTask
 from tasks.advanced_tasks.start_roundabout import StartRoundaboutTask
-from tasks.advanced_tasks.first_ball import FirstBallTask
+from Robocup.tasks.nil.first_ball import FirstBallTask
 from tasks.advanced_tasks.test_task import TestTask
 from tasks.advanced_tasks.first_golf import Firstball
 from tasks.drive_roundabout import DriveRoundaboutTask
 from tasks.exit_roundabout import ExitRoundaboutTask
-from tasks.nil.drive_to_hole_task import DriveToHolePointTask
+from tasks.nil.drop_balls import DriveToHoleTask
 
 class MissionManager:
 
@@ -37,7 +37,7 @@ class MissionManager:
         #self.task_queue.append(BallTask(self.world, self.motion_controller, self.servo_controller))
         #self.task_queue.append(Firstball(self.world, self.motion_controller, self.servo_controller, distance=1.0, velocity=0.2))
         # self.task_queue.append(DriveToPointTask(self.world, self.motion_controller, self.servo_controller, target_x=1.0, target_y=1.0))  # Example: drive 1m forward
-        self.task_queue.append(DriveToHolePointTask(self.world, self.motion_controller, self.servo_controller))
+        self.task_queue.append(DriveToHoleTask(self.world, self.motion_controller, self.servo_controller))
 
     def start_next_task(self):
         if len(self.task_queue) == 0:
