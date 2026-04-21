@@ -51,7 +51,7 @@ class DriveToGolf1Task(BaseTask):
         self.dist = np.array([[0.02674745, -0.10674703, -0.00277349, 0.0034295, 0.16937755]])
 
         # --- PRE-CALCULATE UNDISTORTION MAPS ---
-        # Assuming standard resolution 800x600; adjust if your camera output differs
+        # Resolution is 806x602 for the uncalibrated camera; adjust if your camera output differs
         w, h = 806, 602
         self.newcameramtx, self.roi = cv2.getOptimalNewCameraMatrix(self.mtx, self.dist, (w, h), 1, (w, h))
         self.mapx, self.mapy = cv2.initUndistortRectifyMap(self.mtx, self.dist, None, self.newcameramtx, (w, h), cv2.CV_32FC1)
