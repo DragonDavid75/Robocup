@@ -73,7 +73,7 @@ class DriveToGolf1Task(BaseTask):
 
         self.colors = {
             'red': {'lower1': (0, 10, 127), 'upper1': (10, 255, 255), 'lower2': (170, 10, 127),'upper2': (180, 255, 255)},
-            'golf': {'lower1': (5, 50, 80), 'upper1': (30, 255, 255)},
+            'golf': {'lower1': (5, 50, 80), 'upper1': (25, 255, 255)},
             'blue': {'lower1': (95, 50, 200), 'upper1': (103, 255, 255)},
             'white': {'lower1': (0, 0, 200), 'upper1': (180, 35, 255)}
         }
