@@ -15,7 +15,7 @@ from tasks.base_tasks.drive_dist_line import DriveDistLineTask
 from mqtt_python.spose import pose
 import time
 
-class DriveToGolf1Task(BaseTask):
+class DriveToGolf2Task(BaseTask):
     def __init__(
         self,
         world,
