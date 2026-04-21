@@ -8,20 +8,20 @@ import numpy as np
 from mqtt_python.scam import cam
 from mqtt_python.uservice import service
 
+
 from tasks.base_task import BaseTask, TaskStatus
 from tasks.base_tasks.drive_dist import DriveDistTask
 from tasks.base_tasks.drive_dist_line import DriveDistLineTask
 from mqtt_python.spose import pose
 import time
 
-class DriveToBallTask(BaseTask):
+class DriveToGolf1Task(BaseTask):
     def __init__(
         self,
         world,
         motion_controller,
         servo_controller,
-        target_color='red',
-        distance_to_gripper = 0.65
+        target_color='golf'
     ):
         super().__init__(world, motion_controller, servo_controller)
 
@@ -40,8 +40,6 @@ class DriveToBallTask(BaseTask):
         self.turn_angle_deg = 0.0
         self.drive_distance_m = 0.0
         self.return_angle_deg = 0.0
-
-        self.distance_to_gripper = distance_to_gripper
 
         #_________________________________________
 
@@ -97,13 +95,18 @@ class DriveToBallTask(BaseTask):
         # }
         self.colors = {
             'red': {'lower1': (0, 10, 127), 'upper1': (10, 255, 255), 'lower2': (170, 10, 127),'upper2': (180, 255, 255)},
-            'golf': {'lower1': (10, 50, 127), 'upper1': (30, 255, 255)},
+            'golf': {'lower1': (5, 50, 80), 'upper1': (30, 255, 255)},
             'blue': {'lower1': (95, 50, 200), 'upper1': (103, 255, 255)},
             'white': {'lower1': (0, 0, 200), 'upper1': (180, 35, 255)}
         }
 
         self.target_color = target_color
-        self.GRIPPER_DISTANCE = 0.28 #meter
+        self.GRIPPER_DISTANCE = 0.33 #meter
+
+        self.stage_2 = 0.25 # distance to drive in stage 2 (m)
+
+        self.TARGET_X = 0.0
+        self.TARGET_Y = 13.0
         self.K_P_TURN = 0.02
         self.K_P_DRIVE = 0.02
         
@@ -121,6 +124,20 @@ class DriveToBallTask(BaseTask):
         world_x = transformed[0] / transformed[2]
         world_y = transformed[1] / transformed[2]
         return float(world_x), float(world_y)
+    
+    def calculate_control_signals(self, current_x, current_y):
+        error_x = self.TARGET_X - current_x
+        error_y = current_y - self.TARGET_Y
+
+        turn = np.clip(error_x * self.K_P_TURN, -0.6, 0.6)
+        drive = np.clip(error_y * self.K_P_DRIVE, -0.6, 0.6)
+
+        if abs(error_x) < 1.0:
+            turn = 0.0
+        if abs(error_y) < 1.5:
+            drive = 0.0
+
+        return round(float(turn), 2), round(float(drive), 2)
     
     def detect_ball(self, frame, color_name):
         blurred = cv2.GaussianBlur(frame, (11, 11), 0)
@@ -141,10 +158,42 @@ class DriveToBallTask(BaseTask):
             return best_kp.pt 
         return None
 
+    def detect_and_compute_target(self):
+        ok, frame, _ = cam.getImage()
+        if not ok:
+            return None
+
+        frame_cal = cv2.remap(frame, self.mapx, self.mapy, cv2.INTER_LINEAR)
+        rx, ry, rw, rh = self.roi
+        frame_cal = frame_cal[ry:ry + rh, rx:rx + rw]
+
+        crop_y_start = int(frame_cal.shape[0] / 3)
+        roi_frame = frame_cal[crop_y_start:, :]
+
+        coords = self.detect_ball(roi_frame, self.target_color)
+        if not coords:
+            return None
+
+        u, v = coords
+        v_world_space = v + crop_y_start
+        world_x, world_y = self.get_world_coords(u, v_world_space)
+
+        # convert
+        target_x = world_y / 100
+        target_y = world_x / 100
+
+        distance = math.hypot(target_x, target_y)
+        angle = -math.degrees(math.atan2(target_y, target_x))
+
+        return distance, angle
+
     def start(self):
         super().start()
         print("[TASK] GolfBallsTask started")
         self.state = 0
+
+        # self.servo_controller.servo_control(1, 200, 300)
+        # self.servo_controller.servo_control(2, 0, 300)
         
 
         world_x, world_y = None,None
@@ -178,11 +227,13 @@ class DriveToBallTask(BaseTask):
             self.target_x = world_y/100
             self.target_y = world_x/100
 
-            if self.target_x > self.distance_to_gripper:
-                self.GRIPPER_DISTANCE = self.distance_to_gripper
-
             # Distance to point
-            self.drive_distance_m = math.hypot(self.target_x, self.target_y)-self.GRIPPER_DISTANCE
+            self.drive_distance_m = (math.hypot(self.target_x, self.target_y)-self.GRIPPER_DISTANCE)
+            print(f"[TASK] Initial drive distance (after stage 2 buffer): {self.drive_distance_m:.2f} m")
+            self.drive_distance_m = math.hypot(self.target_x, self.target_y)-self.GRIPPER_DISTANCE - self.stage_2
+
+            print(f"[TASK] Initial drive distance (after stage 2 buffer): {self.drive_distance_m:.2f} m")
+
 
             self.turn_angle_deg = -(math.degrees(
                 math.atan2(self.target_y, self.target_x)
@@ -206,31 +257,27 @@ class DriveToBallTask(BaseTask):
     def update(self):
 
         if self.state == 0:
-            self.servo_controller.servo_control(1, -800, 300)
-            self.motion_controller.follow_for_distance(0.3, 0.6, action="LEFT")
-            self.state = 1
-        #STATE 1: Drive to ball
-        elif self.state == 1:
             self.servo_controller.servo_control(1, 200, 300)
-            self.servo_controller.servo_control(2, -1000, 300)
+            # self.motion_controller.follow_until_intersection_or_end_line(0.35)
+            self.state = 1
+
+        elif self.state == 1:
             if not self.motion_controller.is_busy():
-                self.motion_controller.follow_for_distance(0.7, 0.2)
+                print("[TASK] Intersection reached - open gripper and lower the arm if not already in that state")
+                self.servo_controller.servo_control(1, 210, 300)
+                self.servo_controller.servo_control(2, 0, 300)
                 self.state = 2
 
-        if self.state == 2:
+        elif self.state == 2:
             if not self.detect_ball_cam:
-                self.state = 9
+                self.state = 12
             else:
                 self.state = 3
 
         elif self.state == 3:
-
             if abs(self.turn_angle_deg) > 1e-6:
                 direction = "right" if self.turn_angle_deg > 0 else "left"
-                print(
-                    f"[TASK] Turning {direction} by "
-                    f"{abs(self.turn_angle_deg):.2f} deg"
-                )
+                print(f"[TASK] Stage 0 - Turning {direction} by {abs(self.turn_angle_deg):.2f} deg")
                 self.motion_controller.turn_in_place(math.radians(self.turn_angle_deg))
                 self.state = 4
             else:
@@ -240,35 +287,30 @@ class DriveToBallTask(BaseTask):
             if not self.motion_controller.is_busy():
                 self.state = 5
 
-        # Step 2: drive along the hypotenuse to the point
         elif self.state == 5:
             if self.drive_distance_m > 1e-6:
-                print(
-                    f"[TASK] Driving to point by "
-                    f"{self.drive_distance_m:.2f} m"
-                )
-                self.motion_controller.drive_distance(
-                    self.drive_distance_m,
-                    self.drive_speed
-                )
-                self.state = 6
-            else:
-                self.state = 7
+                print(f"[TASK] Stage 1 - Driving by {self.drive_distance_m:.2f} m")
+                self.motion_controller.follow_for_distance(self.drive_distance_m, 0.2, action="LEFT")
+            self.state = 6
 
         elif self.state == 6:
-            self.servo_controller.servo_control(2, 0, 300)
             if not self.motion_controller.is_busy():
-                self.state = 7
+                print("[TASK] Stage 1 complete, starting stage 2 correction")
+                result = self.detect_and_compute_target()
+                if result is None:
+                    print("[TASK] Lost ball after stage 1")
+                    self.state = 12
+                else:
+                    distance, angle = result
+                    self.drive_distance_m = max(0.0, distance - self.GRIPPER_DISTANCE)
+                    self.turn_angle_deg = angle
+                    self.state = 7
 
-        # Step 3: turn back to the original heading
         elif self.state == 7:
-            if abs(self.return_angle_deg) > 1e-6:
-                direction = "right" if self.return_angle_deg > 0 else "left"
-                print(
-                    f"[TASK] Turning back {direction} by "
-                    f"{abs(self.return_angle_deg):.2f} deg"
-                )
-                self.motion_controller.turn_in_place(math.radians(self.return_angle_deg))
+            if abs(self.turn_angle_deg) > 1e-6:
+                direction = "right" if self.turn_angle_deg > 0 else "left"
+                print(f"[TASK] Stage 2 - Correcting turn {direction} by {abs(self.turn_angle_deg):.2f} deg")
+                self.motion_controller.turn_in_place(math.radians(self.turn_angle_deg))
                 self.state = 8
             else:
                 self.state = 9
@@ -278,7 +320,28 @@ class DriveToBallTask(BaseTask):
                 self.state = 9
 
         elif self.state == 9:
+            if self.drive_distance_m > 1e-6:
+                print(f"[TASK] Stage 2 - Final drive by {self.drive_distance_m:.2f} m")
+                # self.motion_controller.drive_distance(self.drive_distance_m, 0.2)
+                self.motion_controller.follow_for_distance(self.drive_distance_m, 0.1, action="LEFT")
+                self.state = 10
+            else:
+                self.state = 11
+
+        elif self.state == 10:
+            if not self.motion_controller.is_busy():
+                self.servo_controller.servo_control(2, -1000, 300)
+                time.sleep(1)
+                self.state = 11
+
+        elif self.state == 11:
             print("[TASK] DriveToPoint completed")
+            # self.motion_controller.follow_until_intersection_or_end_line(0.07)
+            # self.motion_controller.follow_for_distance(1.5, 0.07, action="RIGHT")
+            self.servo_controller.servo_control(1, -500, 20)
+            self.state = 12
+
+        elif self.state == 12:
             return TaskStatus.DONE
 
         return TaskStatus.RUNNING
