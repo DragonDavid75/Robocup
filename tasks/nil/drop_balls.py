@@ -53,6 +53,17 @@ class DriveToHoleTask(BaseTask):
             "brown_morph_kernel": (7, 7),
         }
 
+        # Using np.array for matrices
+        self.mtx = np.array([[642.21815902, 0., 406.71091241], [0., 639.62546619, 292.02420168], [0., 0., 1.]])
+        self.dist = np.array([[0.02674745, -0.10674703, -0.00277349, 0.0034295, 0.16937755]])
+
+        # --- PRE-CALCULATE UNDISTORTION MAPS ---
+        # Resolution is 806x602 for the uncalibrated camera; adjust if your camera output differs
+        w, h = 806, 602
+        self.newcameramtx, self.roi = cv2.getOptimalNewCameraMatrix(self.mtx, self.dist, (w, h), 1, (w, h))
+        self.mapx, self.mapy = cv2.initUndistortRectifyMap(self.mtx, self.dist, None, self.newcameramtx, (w, h), cv2.CV_32FC1)
+
+
         # --- State Machine ---
         # 0 = detect
         # 1 = turn
@@ -61,6 +72,10 @@ class DriveToHoleTask(BaseTask):
         # 4 = wait for drive
         # 5 = servo action / done
         self.state = 0
+        self.hole_detected = false
+
+        self.GRIPPER_DISTANCE = 0.33
+        self.stage_2 = 0.25 
 
         self.drive_distance_m = 0.0
         self.turn_angle_deg = 0.0
@@ -158,6 +173,7 @@ class DriveToHoleTask(BaseTask):
             print("Camera read failed")
             return None
 
+        frame = cv2.remap(frame, self.mapx, self.mapy, cv2.INTER_LINEAR)
         height, width = frame.shape[:2]
 
         # Look only at the bottom half for detection
@@ -241,51 +257,131 @@ class DriveToHoleTask(BaseTask):
 
         return distance, angle
 
-    def update(self):
-        if self.state == 0:
-            result = self.detect_and_compute_target()
-            if result is not None:
-                self.drive_distance_m, self.turn_angle_deg = result
-                self.state = 1
-            return TaskStatus.RUNNING
+    def start(self):
+        super().start()
+        print("[TASK] Hole Task Started")
+        self.state==0
+        # move servo arm down
+        self.servo_controller.servo_control(1, 200, 500)
+        time.sleep(0.5)# wait until it is down
 
+        result = self.detect_and_compute_target()
+        if result is not None:
+            self.hole_detected = True
+            distance, turn = result
+            self.drive_distance_m = distance - self.GRIPPER_DISTANCE -self.stage_2
+            self.turn_angle_deg = turn
+        
+
+    def update(self):
+        # if self.state == 0:
+        #     result = self.detect_and_compute_target()
+        #     if result is not None:
+        #         self.drive_distance_m, self.turn_angle_deg = result
+        #         self.state = 1
+        #     return TaskStatus.RUNNING
+
+        if self.state == 0:
+            self.servo_controller.servo_control(1, 200, 300)
+            self.state = 1
+
+        #servo arm down and open gripper
         elif self.state == 1:
-            if abs(self.turn_angle_deg) > 3.0:
-                self.motion_controller.turn_in_place(
-                    math.radians(self.turn_angle_deg)
-                )
+            if not self.motion_controller.is_busy():
+                print("[TASK] Intersection reached - open gripper and lower the arm if not already in that state")
+                self.servo_controller.servo_control(1, 210, 300)
+                self.servo_controller.servo_control(2, -1000, 300)
                 self.state = 2
+
+        #check if hole was detected in the start() 
+        elif self.state == 2:
+            if not self.hole_detected:
+                self.state = 12
             else:
                 self.state = 3
-            return TaskStatus.RUNNING
 
-        elif self.state == 2:
-            if self.motion_controller.is_busy():
-                return TaskStatus.RUNNING
-            self.state = 3
-            return TaskStatus.RUNNING
-
+        #turn to face the hole
         elif self.state == 3:
-            if self.drive_distance_m > 0.1:
-                self.motion_controller.follow_for_distance(
-                    self.drive_distance_m - 0.1, 0.1
-                )
+            if abs(self.turn_angle_deg) > 1e-6:
+                direction = "right" if self.turn_angle_deg > 0 else "left"
+                print(f"[TASK] Stage 0 - Turning {direction} by {abs(self.turn_angle_deg):.2f} deg")
+                self.motion_controller.turn_in_place(math.radians(self.turn_angle_deg))
                 self.state = 4
             else:
                 self.state = 5
-            return TaskStatus.RUNNING
 
+        # wait until turn is completed
         elif self.state == 4:
-            if self.motion_controller.is_busy():
-                return TaskStatus.RUNNING
-            self.state = 5
-            return TaskStatus.RUNNING
+            if not self.motion_controller.is_busy():
+                self.state = 5
 
+        # drive to the hole
         elif self.state == 5:
-            if not self.servos_done:
-                self.servo_controller.servo_control(1, 200, 300)
+            if self.drive_distance_m > 1e-6:
+                print(f"[TASK] Stage 1 - Driving by {self.drive_distance_m:.2f} m")
+                self.motion_controller.drive_distance(self.drive_distance_m, 0.2)
+                # self.motion_controller.follow_for_distance(self.drive_distance_m, 0.2, action="LEFT")
+            self.state = 6
+
+        #wait until the drive is completed
+        elif self.state == 6:
+            if not self.motion_controller.is_busy():
+                print("[TASK] Stage 1 complete, starting stage 2 correction")
+                # detect the ball again once we are 25cm away from it
+                result = self.detect_and_compute_target()
+                if result is None:
+                    print("[TASK] Lost ball after stage 1")
+                    self.state = 12
+                else:
+                    distance, angle = result
+                    self.drive_distance_m = max(0.0, distance - self.GRIPPER_DISTANCE)
+                    self.turn_angle_deg = angle
+                    self.state = 7
+
+        #turn to face the ball
+        elif self.state == 7:
+            if abs(self.turn_angle_deg) > 1e-6:
+                direction = "right" if self.turn_angle_deg > 0 else "left"
+                print(f"[TASK] Stage 2 - Correcting turn {direction} by {abs(self.turn_angle_deg):.2f} deg")
+                self.motion_controller.turn_in_place(math.radians(self.turn_angle_deg))
+                self.state = 8
+            else:
+                self.state = 9
+
+        # wait until turn is completed
+        elif self.state == 8:
+            if not self.motion_controller.is_busy():
+                self.state = 9
+
+        #drive to the ball
+        elif self.state == 9:
+            if self.drive_distance_m > 1e-6:
+                print(f"[TASK] Stage 2 - Final drive by {self.drive_distance_m:.2f} m")
+                self.motion_controller.drive_distance(self.drive_distance_m, 0.2)
+                # self.motion_controller.follow_for_distance(self.drive_distance_m, 0.1, action="LEFT")
+                self.state = 10
+            else:
+                self.state = 11
+
+        # wait until drive is complete, and then open the gripper
+        elif self.state == 10:
+            if not self.motion_controller.is_busy():
                 self.servo_controller.servo_control(2, 0, 300)
-                self.servos_done = True
+                time.sleep(1)
+                self.state = 11
+
+        elif self.state == 11:
+            print("[TASK] DriveToPoint completed")
+            # lift the servo arm slowly, 
+            self.servo_controller.servo_control(1, -500, 20)
+            self.state = 12
+
+        elif self.state == 12:
             return TaskStatus.DONE
 
         return TaskStatus.RUNNING
+
+    def stop(self):
+        super().stop()
+        self.motion_controller.stop()
+        print("[TASK] DriveToPoint stopped")
