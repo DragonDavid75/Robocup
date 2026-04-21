@@ -79,7 +79,7 @@ class DriveToGolf2Task(BaseTask):
         }
 
         self.target_color = target_color
-        self.GRIPPER_DISTANCE = 0.33 #meter
+        self.GRIPPER_DISTANCE = 0.25 #meter (change this value if robot consistently stops too soon or late, i.e. calibration is off)
 
         self.stage_2 = 0.25 # travel until 25cm are remaining
         
