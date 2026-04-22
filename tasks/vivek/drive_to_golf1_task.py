@@ -318,8 +318,60 @@ class DriveToGolf1Task(BaseTask):
             self.servo_controller.servo_control(1, -500, 20)
             self.state = 12
 
-        elif self.state == 12:
+        if self.state == 12:
+            print("[TASK] Exiting sea saw")
+            self.motion_controller.drive_distance(0.7, 0.1)
+            # self.motion_controller.follow_until_line_loss(0.1)
+            self.state = 13
+
+        elif self.state == 13:
+            if not self.motion_controller.is_busy():
+                self.state = 14
+
+        # Step 2: drive along the hypotenuse to the point
+        elif self.state == 14:
+            print("[TASK] Drive till we find a line")
+            self.motion_controller.drive_to_line(0.1)
+            self.state = 15
+
+        elif self.state == 15:
+            if not self.motion_controller.is_busy():
+                self.state = 16
+
+        # Step 3: turn back to the original heading
+        elif self.state == 16:
+            print("[TASK] turn right")
+            self.motion_controller.turn_in_place(math.radians(-90))
+            self.state = 17
+
+        elif self.state == 17:
+            if not self.motion_controller.is_busy():
+                self.state = 18
+        
+        elif self.state == 18:
+            print("[TASK] follow until intersection")
+            self.motion_controller.follow_until_intersection_or_end_line(0.3)
+            self.state = 19
+
+        elif self.state == 19:
+            if not self.motion_controller.is_busy():
+                self.state = 20
+
+        elif self.state == 20:
+            print("[TASK] turn right on the intersection")
+            self.motion_controller.follow_for_distance(2.0,0.4,action="STRAIGHT")
+            self.state = 21
+
+        elif self.state == 21:
+            if not self.motion_controller.is_busy():
+                self.state = 22
+
+        elif self.state == 22:
+            print("[TASK] DriveToPoint completed")
             return TaskStatus.DONE
+
+        # elif self.state == 12:
+        #     return TaskStatus.DONE
 
         return TaskStatus.RUNNING
 
