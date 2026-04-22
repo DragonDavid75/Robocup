@@ -31,6 +31,7 @@ class DriveToGolf1Task(BaseTask):
         self.target_y = 0.0
 
         self.state = 0
+        self.drive_error = 0
 
         # Computed at start
         self.turn_angle_deg = 0.0
@@ -270,7 +271,12 @@ class DriveToGolf1Task(BaseTask):
                     self.state = 12
                 else:
                     distance, angle = result
+                    self.drive_error = distance - (self.GRIPPER_DISTANCE + self.stage_2)
                     self.drive_distance_m = max(0.0, distance - self.GRIPPER_DISTANCE)
+                    print(f"[TASK] Stage 2 - Driving by {self.drive_distance_m:.2f} m")
+                    self.drive_distance_m = self.drive_distance_m + (self.drive_error*1.5)
+                    print("[TASK] Move error = ", self.drive_error)
+                    print(f"[TASK] Stage 2 - Driving by {self.drive_distance_m:.2f} m")
                     self.turn_angle_deg = angle
                     self.state = 7
 
