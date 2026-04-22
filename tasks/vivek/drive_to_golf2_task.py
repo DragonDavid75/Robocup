@@ -31,6 +31,7 @@ class DriveToGolf2Task(BaseTask):
         self.target_y = 0.0
 
         self.state = 0
+        self.drive_error = 0
 
         # Computed at start
         self.turn_angle_deg = 0.0
@@ -79,7 +80,7 @@ class DriveToGolf2Task(BaseTask):
         }
 
         self.target_color = target_color
-        self.GRIPPER_DISTANCE = 0.25 #meter (change this value if robot consistently stops too soon or late, i.e. calibration is off)
+        self.GRIPPER_DISTANCE = 0.26 #meter (change this value if robot consistently stops too soon or late, i.e. calibration is off)
 
         self.stage_2 = 0.25 # travel until 25cm are remaining
         
@@ -271,7 +272,12 @@ class DriveToGolf2Task(BaseTask):
                     self.state = 12
                 else:
                     distance, angle = result
+                    self.drive_error = distance - (self.GRIPPER_DISTANCE + self.stage_2)
                     self.drive_distance_m = max(0.0, distance - self.GRIPPER_DISTANCE)
+                    print(f"[TASK] Stage 2 - Driving by {self.drive_distance_m:.2f} m")
+                    self.drive_distance_m = self.drive_distance_m + (self.drive_error/3)
+                    print("[TASK] Move error = ", self.drive_error)
+                    print(f"[TASK] Stage 2 - Driving by {self.drive_distance_m:.2f} m")
                     self.turn_angle_deg = angle
                     self.state = 7
 
@@ -310,7 +316,7 @@ class DriveToGolf2Task(BaseTask):
         elif self.state == 11:
             print("[TASK] DriveToPoint completed")
             # lift the servo arm slowly, 
-            self.servo_controller.servo_control(1, -500, 20)
+            self.servo_controller.servo_control(1, 200, 20)
             self.state = 12
 
         elif self.state == 12:
