@@ -1,19 +1,12 @@
 # core/mission_manager.py
 
 import time
-from tasks.vivek.ball import BallTask
 from tasks.base_task import TaskStatus
-from tasks.base_tasks.drive_dist_line import DriveDistLineTask
-from tasks.base_tasks.small_turn import SmallTurnTask
-from tasks.advanced_tasks.bonus_time import BonusTimeTask
-from tasks.advanced_tasks.timer_first import TimerFirstTask
-from tasks.advanced_tasks.start_roundabout import StartRoundaboutTask
-from Robocup.tasks.nil.first_ball import FirstBallTask
-from tasks.advanced_tasks.test_task import TestTask
-from tasks.advanced_tasks.first_golf import Firstball
-from tasks.drive_roundabout import DriveRoundaboutTask
-from tasks.exit_roundabout import ExitRoundaboutTask
-from tasks.nil.drop_balls import DriveToHoleTask
+from tasks.advanced_tasks.a_start_roundabout import StartRoundaboutTask
+from tasks.advanced_tasks.b_timer_first import TimerFirstTask
+from tasks.advanced_tasks.c_get_golf_1 import DriveToGolf1Task
+from tasks.advanced_tasks.d_drop_golf_1 import DriveGolfToHoleTask
+
 
 class MissionManager:
 
@@ -34,11 +27,10 @@ class MissionManager:
     Each task should be an instance of a class that implements the Task interface (with start, update, and stop methods).
     """
     def build_mission(self):
-        #self.task_queue.append(BallTask(self.world, self.motion_controller, self.servo_controller))
-        #self.task_queue.append(Firstball(self.world, self.motion_controller, self.servo_controller, distance=1.0, velocity=0.2))
-        # self.task_queue.append(DriveToPointTask(self.world, self.motion_controller, self.servo_controller, target_x=1.0, target_y=1.0))  # Example: drive 1m forward
-        self.task_queue.append(DriveToHoleTask(self.world, self.motion_controller, self.servo_controller))
-
+        self.task_queue.append(StartRoundaboutTask(self.world, self.motion_controller, self.servo_controller))
+        self.task_queue.append(TimerFirstTask(self.world, self.motion_controller, self.servo_controller))
+        self.task_queue.append(DriveToGolf1Task(self.world, self.motion_controller, self.servo_controller))
+        self.task_queue.append(DriveGolfToHoleTask(self.world, self.motion_controller, self.servo_controller))
     def start_next_task(self):
         if len(self.task_queue) == 0:
             print("[MISSION] All tasks completed")
