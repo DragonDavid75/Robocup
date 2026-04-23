@@ -31,7 +31,10 @@ class DriveToGolf1Task(BaseTask):
         self.target_y = 0.0
 
         self.state = 0
-        self.drive_error = 0
+
+        # Speeds
+        self.turn_speed = 0.3
+        self.drive_speed = 0.15
 
         # Computed at start
         self.turn_angle_deg = 0.0
@@ -41,6 +44,10 @@ class DriveToGolf1Task(BaseTask):
         #_________________________________________
 
         self.detect_ball_cam = False
+        
+        # --- MQTT Setup ---
+        self.MQTT_TOPIC_GRIPPER = "robobot/cmd/T0"
+        self.MQTT_TOPIC_DRIVE = "robobot/cmd/ti"
 
         # --- Calibration & Homography ---
         self.pixel_points = np.array([(110, 551), (716, 552), (249, 372), (565, 372), (408, 432), (406, 372), (414, 551), (201, 434), (615, 432)], dtype=np.float32)
@@ -52,7 +59,7 @@ class DriveToGolf1Task(BaseTask):
         self.dist = np.array([[0.02674745, -0.10674703, -0.00277349, 0.0034295, 0.16937755]])
 
         # --- PRE-CALCULATE UNDISTORTION MAPS ---
-        # Resolution is 806x602 for the uncalibrated camera; adjust if your camera output differs
+        # Assuming standard resolution 800x600; adjust if your camera output differs
         w, h = 806, 602
         self.newcameramtx, self.roi = cv2.getOptimalNewCameraMatrix(self.mtx, self.dist, (w, h), 1, (w, h))
         self.mapx, self.mapy = cv2.initUndistortRectifyMap(self.mtx, self.dist, None, self.newcameramtx, (w, h), cv2.CV_32FC1)
@@ -71,18 +78,37 @@ class DriveToGolf1Task(BaseTask):
         params.filterByInertia = True
         params.minInertiaRatio = 0.3
         self.detector = cv2.SimpleBlobDetector_create(params)
+        # --- Blob Detector Settings ---
+        # params = cv2.SimpleBlobDetector_Params()
+        # params.filterByArea = True
+        # params.minArea = 500
+        # params.filterByCircularity = True
+        # params.minCircularity = 0.45
+        # params.filterByInertia = True
+        # params.minInertiaRatio = 0.3
+        # self.detector = cv2.SimpleBlobDetector_create(params)
 
+        # self.colors = {
+        #     'red': {'lower1': (0, 10, 80), 'upper1': (10, 255, 255), 'lower2': (170, 10, 80), 'upper2': (180, 255, 255)},
+        #     'blue': {'lower1': (95, 0, 127), 'upper1': (103, 255, 255)},
+        #     'white': {'lower1': (0, 0, 200), 'upper1': (180, 35, 255)}
+        # }
         self.colors = {
             'red': {'lower1': (0, 10, 127), 'upper1': (10, 255, 255), 'lower2': (170, 10, 127),'upper2': (180, 255, 255)},
-            'golf': {'lower1': (5, 50, 80), 'upper1': (25, 255, 255)},
+            'golf': {'lower1': (5, 50, 80), 'upper1': (30, 255, 255)},
             'blue': {'lower1': (95, 50, 200), 'upper1': (103, 255, 255)},
             'white': {'lower1': (0, 0, 200), 'upper1': (180, 35, 255)}
         }
 
         self.target_color = target_color
-        self.GRIPPER_DISTANCE = 0.26 #meter (change this value if robot consistently stops too soon or late, i.e. calibration is off)
+        self.GRIPPER_DISTANCE = 0.33 #meter
 
-        self.stage_2 = 0.25 # travel until 25cm are remaining
+        self.stage_2 = 0.25 # distance to drive in stage 2 (m)
+
+        self.TARGET_X = 0.0
+        self.TARGET_Y = 13.0
+        self.K_P_TURN = 0.02
+        self.K_P_DRIVE = 0.02
         
         self.last_drive = 0.0
         self.last_turn = 0.0
@@ -93,15 +119,27 @@ class DriveToGolf1Task(BaseTask):
         self.MAX_LOST_FRAMES = 10 # Number of frames to wait before stopping
 
     def get_world_coords(self, u, v):
-        # function to convert u, v cordinates to world x, and world y cordinates
         pixel_vector = np.array([u, v, 1.0], dtype=np.float32).reshape(3, 1)
         transformed = np.dot(self.H, pixel_vector)
         world_x = transformed[0] / transformed[2]
         world_y = transformed[1] / transformed[2]
         return float(world_x), float(world_y)
+    
+    def calculate_control_signals(self, current_x, current_y):
+        error_x = self.TARGET_X - current_x
+        error_y = current_y - self.TARGET_Y
 
+        turn = np.clip(error_x * self.K_P_TURN, -0.6, 0.6)
+        drive = np.clip(error_y * self.K_P_DRIVE, -0.6, 0.6)
+
+        if abs(error_x) < 1.0:
+            turn = 0.0
+        if abs(error_y) < 1.5:
+            drive = 0.0
+
+        return round(float(turn), 2), round(float(drive), 2)
+    
     def detect_ball(self, frame, color_name):
-        # function to detect ball on the frame, color name to detect the specific colored ball
         blurred = cv2.GaussianBlur(frame, (11, 11), 0)
         hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
         c = self.colors.get(color_name)
@@ -121,7 +159,6 @@ class DriveToGolf1Task(BaseTask):
         return None
 
     def detect_and_compute_target(self):
-        # function to capture frame, call detect ball, and calculate the world coordinates to move to
         ok, frame, _ = cam.getImage()
         if not ok:
             return None
@@ -154,9 +191,10 @@ class DriveToGolf1Task(BaseTask):
         super().start()
         print("[TASK] GolfBallsTask started")
         self.state = 0
-        # move servo arm down
-        self.servo_controller.servo_control(1, 200, 500)
-        time.sleep(0.5)# wait until it is down
+
+        # self.servo_controller.servo_control(1, 200, 300)
+        # self.servo_controller.servo_control(2, 0, 300)
+        
 
         world_x, world_y = None,None
         print("[TASK] Capturing camera frame for ball detection...")
@@ -186,7 +224,6 @@ class DriveToGolf1Task(BaseTask):
                 print(f"[DETECTION] Detected {self.target_color} ball at pixel ({u:.1f}, {v_world_space:.1f}) -> world ({world_x:.2f}, {world_y:.2f})")
         
         if self.detect_ball_cam:
-            #convert from cm to m
             self.target_x = world_y/100
             self.target_y = world_x/100
 
@@ -221,9 +258,9 @@ class DriveToGolf1Task(BaseTask):
 
         if self.state == 0:
             self.servo_controller.servo_control(1, 200, 300)
+            # self.motion_controller.follow_until_intersection_or_end_line(0.35)
             self.state = 1
 
-        #servo arm down and open gripper
         elif self.state == 1:
             if not self.motion_controller.is_busy():
                 print("[TASK] Intersection reached - open gripper and lower the arm if not already in that state")
@@ -231,14 +268,12 @@ class DriveToGolf1Task(BaseTask):
                 self.servo_controller.servo_control(2, 0, 300)
                 self.state = 2
 
-        #check if ball was detected in the start() 
         elif self.state == 2:
             if not self.detect_ball_cam:
                 self.state = 12
             else:
                 self.state = 3
 
-        #turn to face the ball
         elif self.state == 3:
             if abs(self.turn_angle_deg) > 1e-6:
                 direction = "right" if self.turn_angle_deg > 0 else "left"
@@ -248,39 +283,29 @@ class DriveToGolf1Task(BaseTask):
             else:
                 self.state = 5
 
-        # wait until turn is completed
         elif self.state == 4:
             if not self.motion_controller.is_busy():
                 self.state = 5
 
-        # drive to the ball, using follow_for_distance to drive on the line, so that the line can guide it
         elif self.state == 5:
             if self.drive_distance_m > 1e-6:
                 print(f"[TASK] Stage 1 - Driving by {self.drive_distance_m:.2f} m")
                 self.motion_controller.follow_for_distance(self.drive_distance_m, 0.2, action="LEFT")
             self.state = 6
 
-        #wait until the drive is completed
         elif self.state == 6:
             if not self.motion_controller.is_busy():
                 print("[TASK] Stage 1 complete, starting stage 2 correction")
-                # detect the ball again once we are 25cm away from it
                 result = self.detect_and_compute_target()
                 if result is None:
                     print("[TASK] Lost ball after stage 1")
                     self.state = 12
                 else:
                     distance, angle = result
-                    self.drive_error = distance - (self.GRIPPER_DISTANCE + self.stage_2)
                     self.drive_distance_m = max(0.0, distance - self.GRIPPER_DISTANCE)
-                    print(f"[TASK] Stage 2 - Driving by {self.drive_distance_m:.2f} m")
-                    self.drive_distance_m = self.drive_distance_m + (self.drive_error/3)
-                    print("[TASK] Move error = ", self.drive_error)
-                    print(f"[TASK] Stage 2 - Driving by {self.drive_distance_m:.2f} m")
                     self.turn_angle_deg = angle
                     self.state = 7
 
-        #turn to face the ball
         elif self.state == 7:
             if abs(self.turn_angle_deg) > 1e-6:
                 direction = "right" if self.turn_angle_deg > 0 else "left"
@@ -290,12 +315,10 @@ class DriveToGolf1Task(BaseTask):
             else:
                 self.state = 9
 
-        # wait until turn is completed
         elif self.state == 8:
             if not self.motion_controller.is_busy():
                 self.state = 9
 
-        #drive to the ball
         elif self.state == 9:
             if self.drive_distance_m > 1e-6:
                 print(f"[TASK] Stage 2 - Final drive by {self.drive_distance_m:.2f} m")
@@ -305,7 +328,6 @@ class DriveToGolf1Task(BaseTask):
             else:
                 self.state = 11
 
-        # wait until drive is complete, and then close the gripper
         elif self.state == 10:
             if not self.motion_controller.is_busy():
                 self.servo_controller.servo_control(2, -1000, 300)
@@ -314,64 +336,13 @@ class DriveToGolf1Task(BaseTask):
 
         elif self.state == 11:
             print("[TASK] DriveToPoint completed")
-            # lift the servo arm slowly, 
+            self.motion_controller.follow_until_intersection_or_end_line(0.07)
+            self.motion_controller.follow_for_distance(1.5, 0.07, action="RIGHT")
             self.servo_controller.servo_control(1, -500, 20)
             self.state = 12
 
-        if self.state == 12:
-            print("[TASK] Exiting sea saw")
-            self.motion_controller.drive_distance(0.7, 0.1)
-            # self.motion_controller.follow_until_line_loss(0.1)
-            self.state = 13
-
-        elif self.state == 13:
-            if not self.motion_controller.is_busy():
-                self.state = 14
-
-        # Step 2: drive along the hypotenuse to the point
-        elif self.state == 14:
-            print("[TASK] Drive till we find a line")
-            self.motion_controller.drive_to_line(0.1)
-            self.state = 15
-
-        elif self.state == 15:
-            if not self.motion_controller.is_busy():
-                self.state = 16
-
-        # Step 3: turn back to the original heading
-        elif self.state == 16:
-            print("[TASK] turn right")
-            self.motion_controller.turn_in_place(math.radians(-90))
-            self.state = 17
-
-        elif self.state == 17:
-            if not self.motion_controller.is_busy():
-                self.state = 18
-        
-        elif self.state == 18:
-            print("[TASK] follow until intersection")
-            self.motion_controller.follow_until_intersection_or_end_line(0.3)
-            self.state = 19
-
-        elif self.state == 19:
-            if not self.motion_controller.is_busy():
-                self.state = 20
-
-        elif self.state == 20:
-            print("[TASK] turn right on the intersection")
-            self.motion_controller.follow_for_distance(2.0,0.4,action="STRAIGHT")
-            self.state = 21
-
-        elif self.state == 21:
-            if not self.motion_controller.is_busy():
-                self.state = 22
-
-        elif self.state == 22:
-            print("[TASK] DriveToPoint completed")
+        elif self.state == 12:
             return TaskStatus.DONE
-
-        # elif self.state == 12:
-        #     return TaskStatus.DONE
 
         return TaskStatus.RUNNING
 

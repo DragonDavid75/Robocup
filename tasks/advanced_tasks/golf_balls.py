@@ -281,7 +281,7 @@ class DriveToGolf1Task(BaseTask):
             print(f"[TASK] Remaining to drive: {remaining_to_drive:.2f} m")
 
             # Close enough to grab
-            if remaining_to_drive <= 0.03:
+            if remaining_to_drive <= 0.05:
                 print("[TASK] Close enough to ball")
                 self.state = 5
             else:
