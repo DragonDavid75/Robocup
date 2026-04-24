@@ -6,7 +6,7 @@ Start: On the line after the seasaw facing away from the roundabout. Arm up and 
 Functionality: Drive along the line, skip the first intersection, turn right on the second intersection(m), go up the ramp, stop at third intersection(l). Turn around to face the hole and go forward a bit. Detect the hole and drop the ball.
 End: Facing the hole after dropping the ball. Arm down and open.
 
-Status: 
+Status: Does what the task order file says, tested separately
 """
 
 
