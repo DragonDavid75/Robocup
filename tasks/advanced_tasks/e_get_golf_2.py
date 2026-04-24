@@ -90,9 +90,9 @@ class DriveToGolf2Task(BaseTask):
         }
 
         self.target_color = target_color
-        self.GRIPPER_DISTANCE = 0.27 #meter
+        self.GRIPPER_DISTANCE = self.world.gripper_distance #meter
 
-        self.stage_2 = 0.1 # travel until 25cm are remaining
+        self.stage_2 = self.world.stage_2 # travel until 25cm are remaining
 
         self.last_drive = 0.0
         self.last_turn = 0.0
@@ -286,7 +286,7 @@ class DriveToGolf2Task(BaseTask):
                     self.drive_error = distance - (self.GRIPPER_DISTANCE + self.stage_2)
                     self.drive_distance_m = max(0.0, distance - self.GRIPPER_DISTANCE)
                     print(f"[TASK] Stage 2 - Driving by {self.drive_distance_m:.2f} m")
-                    self.drive_distance_m = self.drive_distance_m + (self.drive_error/2)
+                    self.drive_distance_m = self.drive_distance_m - (self.drive_error/2)
                     print("[TASK] Move error = ", self.drive_error)
                     print(f"[TASK] Stage 2 - Driving by {self.drive_distance_m:.2f} m")
                     self.turn_angle_deg = angle
