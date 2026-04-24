@@ -1,10 +1,10 @@
 """
-tasks/advanced_tasks/c_get_golf_1.py
+tasks/advanced_tasks/g_roundabout_goal.py
 
-3rd task: Get first golf ball
-Start: 50cm on the seasaw along the line from the intersection(j). Arm lowered and open.
-Functionality: Detect golf ball, drive to it, and grab it. Drives along the line on the seasaw until the end of the line. Exits seasaw, finds next line and turns right.
-End: On the line after the seasaw facing away from the roundabout. Arm up and closed with the ball.
+7th task: Roundabout to goal
+Start: After 1m, after the stairs. Arm up and open.
+Functionality: Go to intersection(n1), turn left, follow line until it ends. Do roundabout through gates(2,3) and exit(d). Go the intersection(b), turn left (either turn left or go forward, turn around and turn right), and go to goal(c).\
+End: Win!
 
 Status:
 """
@@ -24,7 +24,7 @@ from tasks.base_tasks.drive_dist_line import DriveDistLineTask
 from mqtt_python.spose import pose
 import time
 
-class DriveToGolf1Task(BaseTask):
+class DriveToGolf2Task(BaseTask):
     def __init__(
         self,
         world,
@@ -266,7 +266,8 @@ class DriveToGolf1Task(BaseTask):
         elif self.state == 5:
             if self.drive_distance_m > 1e-6:
                 print(f"[TASK] Stage 1 - Driving by {self.drive_distance_m:.2f} m")
-                self.motion_controller.follow_for_distance(self.drive_distance_m, 0.2, action="LEFT")
+                self.motion_controller.drive_distance(self.drive_distance_m, 0.2)
+                # self.motion_controller.follow_for_distance(self.drive_distance_m, 0.2, action="LEFT")
             self.state = 6
 
         #wait until the drive is completed
@@ -308,8 +309,8 @@ class DriveToGolf1Task(BaseTask):
         elif self.state == 9:
             if self.drive_distance_m > 1e-6:
                 print(f"[TASK] Stage 2 - Final drive by {self.drive_distance_m:.2f} m")
-                # self.motion_controller.drive_distance(self.drive_distance_m, 0.2)
-                self.motion_controller.follow_for_distance(self.drive_distance_m, 0.1, action="LEFT")
+                self.motion_controller.drive_distance(self.drive_distance_m, 0.1)
+                # self.motion_controller.follow_for_distance(self.drive_distance_m, 0.1, action="LEFT")
                 self.state = 10
             else:
                 self.state = 11
@@ -324,108 +325,11 @@ class DriveToGolf1Task(BaseTask):
         elif self.state == 11:
             print("[TASK] DriveToPoint completed")
             # lift the servo arm slowly, 
-            self.servo_controller.servo_control(1, -500, 20)
+            self.servo_controller.servo_control(1, 200, 20)
             self.state = 12
 
-        if self.state == 12:
-            print("[TASK] Exiting sea saw")
-            self.motion_controller.drive_distance(0.7, 0.1)
-            # self.motion_controller.follow_until_line_loss(0.1)
-            self.state = 13
-
-        elif self.state == 13:
-            if not self.motion_controller.is_busy():
-                self.state = 14
-
-        # Step 2: drive along the hypotenuse to the point
-        elif self.state == 14:
-            print("[TASK] Drive till we find a line")
-            self.motion_controller.drive_to_line(0.1)
-            self.state = 15
-
-        elif self.state == 15:
-            if not self.motion_controller.is_busy():
-                self.state = 16
-
-        # Step 3: turn back to the original heading
-        elif self.state == 16:
-            print("[TASK] turn right")
-            self.motion_controller.turn_in_place(math.radians(-90))
-            self.state = 17
-
-        elif self.state == 17:
-            if not self.motion_controller.is_busy():
-                self.state = 18
-        
-        elif self.state == 18:
-            print("[TASK] follow until intersection")
-            self.motion_controller.follow_until_intersection_or_end_line(0.3)
-            self.state = 19
-
-        elif self.state == 19:
-            if not self.motion_controller.is_busy():
-                self.state = 20
-
-        elif self.state == 20:
-            print("[TASK] turn right on the intersection")
-            self.motion_controller.follow_for_distance(2.0,0.4,action="STRAIGHT")
-            self.state = 21
-
-        elif self.state == 21:
-            if not self.motion_controller.is_busy():
-                self.state = 22
-
-        elif self.state == 21:
-            print("[TASK] turn right on the intersection")
-            self.motion_controller.follow_for_distance(2.0,0.4,action="RIGHT")
-            self.state = 22
-
-        elif self.state == 22:
-            if not self.motion_controller.is_busy():
-                self.state = 23
-
-        elif self.state == 23:
-            print("[TASK] turn right on the intersection")
-            self.motion_controller.follow_until_intersection_or_end_line(0.4)
-            self.state = 24
-
-        elif self.state == 24:
-            if not self.motion_controller.is_busy():
-                self.state = 25
-
-        elif self.state == 25:
-            print("[TASK] turn right")
-            self.motion_controller.turn_in_place(math.radians(-90))
-            self.state = 26
-
-        elif self.state == 26:
-            if not self.motion_controller.is_busy():
-                self.state = 27
-
-        elif self.state == 27:
-            print("[TASK] turn right")
-            self.motion_controller.drive_distance(0.3, 0.2)
-            self.state = 28
-
-        elif self.state == 28:
-            if not self.motion_controller.is_busy():
-                self.state = 29
-
-        elif self.state == 29:
-            print("[TASK] turn right on the intersection")
-            self.motion_controller.follow_until_intersection_or_end_line(0.4)
-            self.state = 30
-
-        elif self.state == 30:
-            if not self.motion_controller.is_busy():
-                self.state = 31
-
-        elif self.state == 31:
-            print("[TASK] DriveToPoint completed")
+        elif self.state == 12:
             return TaskStatus.DONE
-
-        # elif self.state == 12:
-        #     return TaskStatus.DONE
 
         return TaskStatus.RUNNING
 

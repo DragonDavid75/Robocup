@@ -1,4 +1,13 @@
-# tasks/vivek/drive_to_point_task.py
+"""
+tasks/advanced_tasks/d_drop_golf_1.py
+
+4th task: Drop first golf ball
+Start: On the line after the seasaw facing away from the roundabout. Arm up and closed with the ball.
+Functionality: Drive along the line, skip the first intersection, turn right on the second intersection(m), go up the ramp, stop at third intersection(l). Turn around to face the hole and go forward a bit. Detect the hole and drop the ball.
+End: Facing the hole after dropping the ball. Arm down and open.
+
+Status:
+"""
 
 import math
 from tasks.base_task import BaseTask, TaskStatus

@@ -1,8 +1,13 @@
-#Second of the tasks
-#Starts right after the rounabout, goes to the timer, 
-# turns around and goes back to the white line, 
-# then continues on the white line for 9.5 m before stopping
-# tasks/timer_first.py
+"""
+tasks/advanced_tasks/timer_first.py
+
+2nd task: First timer
+Start: 20cm along the line after the roundabout. Arm up and open.
+Functionality: Turn 90 degrees to the right and goes to the first timer, turn around and goes back to the line. Drive along the lines until the intersection(j), turn left and goes 50cm.
+End: 50cm from the intersection(j) to the left along the line. Arm lowered and open.
+
+Status: Does what the task order file says, tested separately
+"""
 
 from tasks.base_task import BaseTask, TaskStatus
 from tasks.base_tasks.drive_dist import DriveDistTask

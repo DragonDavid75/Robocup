@@ -1,7 +1,15 @@
-#First one of the tasks
-#Goes to the rounabout, turns right and follows the roundabout until it can exit, 
-# then turns right again to exit the roundabout and continues on the white line for 25 cm before stopping
-# tasks/advanced_tasks/start_roundabout.py
+"""
+tasks/advanced_tasks/start_roundabout.py
+
+1st task: Start to roundabout
+Start: At the start position.
+Functionality: From the start position to to the roundabout, get the first two gates(1,2). Get off the roundabout(e) and driving 20cm along the line.
+End: 20cm off the roundabout on the line. Arm up and open.
+
+Status: Does what the task order file says, tested separately, tested with prev and next task
+
+Notes/Todos:
+"""
 
 from tasks.base_task import BaseTask, TaskStatus
 from mqtt_python.spose import pose
