@@ -90,9 +90,9 @@ class DriveToGolf1Task(BaseTask):
         }
 
         self.target_color = target_color
-        self.GRIPPER_DISTANCE = 0.27 #meter (change this value if robot consistently stops too soon or late, i.e. calibration is off)
+        self.GRIPPER_DISTANCE = self.world.gripper_distance #meter (change this value if robot consistently stops too soon or late, i.e. calibration is off)
 
-        self.stage_2 = 0.1 # travel until 25cm are remaining
+        self.stage_2 = self.world.stage_2 # travel until 25cm are remaining
         
         self.last_drive = 0.0
         self.last_turn = 0.0
@@ -233,7 +233,7 @@ class DriveToGolf1Task(BaseTask):
     def update(self):
 
         if self.state == 0:
-            self.servo_controller.servo_control(1, 200, 300)
+            self.servo_controller.servo_control(1, 210, 300)
             self.state = 1
 
         #servo arm down and open gripper
