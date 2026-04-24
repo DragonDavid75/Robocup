@@ -6,334 +6,440 @@ Start: On the line after the seasaw facing away from the roundabout. Arm up and 
 Functionality: Drive along the line, skip the first intersection, turn right on the second intersection(m), go up the ramp, stop at third intersection(l). Turn around to face the hole and go forward a bit. Detect the hole and drop the ball.
 End: Facing the hole after dropping the ball. Arm down and open.
 
-Status:
+Status: 
 """
 
+
 import math
-from tasks.base_task import BaseTask, TaskStatus
 import time
+import os
 import cv2
 import numpy as np
-from mqtt_python.scam import cam
-from mqtt_python.uservice import service
-
-
 from tasks.base_task import BaseTask, TaskStatus
-from tasks.base_tasks.drive_dist import DriveDistTask
-from tasks.base_tasks.drive_dist_line import DriveDistLineTask
-from mqtt_python.spose import pose
-import time
+from mqtt_python.scam import cam
 
-class DriveToGolf2Task(BaseTask):
-    def __init__(
-        self,
-        world,
-        motion_controller,
-        servo_controller,
-        target_color='golf'
-    ):
+
+class DriveToHoleTask(BaseTask):
+    def __init__(self, world, motion_controller, servo_controller):
         super().__init__(world, motion_controller, servo_controller)
 
-        self.servo_controller = servo_controller
+        self.pixel_points = np.array(
+            [
+                (110, 551),
+                (716, 552),
+                (249, 372),
+                (565, 372),
+                (408, 432),
+                (406, 372),
+                (414, 551),
+                (201, 434),
+                (615, 432),
+            ],
+            dtype=np.float32,
+        )
 
-        self.target_x = 0.0
-        self.target_y = 0.0
+        self.world_points = np.array(
+            [
+                (-15, 30),
+                (15, 30),
+                (-15, 60),
+                (15, 60),
+                (0, 30),
+                (0, 45),
+                (0, 60),
+                (-15, 45),
+                (15, 45),
+            ],
+            dtype=np.float32,
+        )
 
-        self.state = 0
-        self.drive_error = 0
+        self.H, _ = cv2.findHomography(
+            self.pixel_points, self.world_points, cv2.RANSAC, 5.0
+        )
 
-        # Computed at start
-        self.turn_angle_deg = 0.0
-        self.drive_distance_m = 0.0
-        self.return_angle_deg = 0.0
+        self.params = {
+            "brown_lower": np.array([5, 80, 50], dtype=np.uint8),
+            "brown_upper": np.array([30, 255, 255], dtype=np.uint8),
 
-        #_________________________________________
+            # Red/orange exclusion mask using your values
+            "red_lower1": np.array([0, 10, 80], dtype=np.uint8),
+            "red_upper1": np.array([10, 255, 255], dtype=np.uint8),
+            "red_lower2": np.array([170, 10, 80], dtype=np.uint8),
+            "red_upper2": np.array([180, 255, 255], dtype=np.uint8),
 
-        self.detect_ball_cam = False
-
-        # --- Calibration & Homography ---
-        self.pixel_points = np.array([(110, 551), (716, 552), (249, 372), (565, 372), (408, 432), (406, 372), (414, 551), (201, 434), (615, 432)], dtype=np.float32)
-        self.world_points = np.array([(-15, 30), (15, 30), (-15, 60), (15, 60), (0, 30), (0, 45), (0, 60), (-15, 45), (15, 45)], dtype=np.float32)
-        self.H, _ = cv2.findHomography(self.pixel_points, self.world_points, cv2.RANSAC, 5.0)
-
-        # Using np.array for matrices
-        self.mtx = np.array([[642.21815902, 0., 406.71091241], [0., 639.62546619, 292.02420168], [0., 0., 1.]])
-        self.dist = np.array([[0.02674745, -0.10674703, -0.00277349, 0.0034295, 0.16937755]])
-
-        # --- PRE-CALCULATE UNDISTORTION MAPS ---
-        # Resolution is 806x602 for the uncalibrated camera; adjust if your camera output differs
-        w, h = 806, 602
-        self.newcameramtx, self.roi = cv2.getOptimalNewCameraMatrix(self.mtx, self.dist, (w, h), 1, (w, h))
-        self.mapx, self.mapy = cv2.initUndistortRectifyMap(self.mtx, self.dist, None, self.newcameramtx, (w, h), cv2.CV_32FC1)
-
-        # --- Blob Detector Settings ---
-        params = cv2.SimpleBlobDetector_Params()
-        params.minThreshold = 10
-        params.maxThreshold = 200
-        params.filterByArea = True
-        params.minArea = 500  # was 1000, 500 also ok, 200...
-        params.maxArea = 10000
-        params.filterByCircularity = True
-        params.minCircularity = 0.45
-        params.filterByConvexity = False
-        params.minConvexity = 0.87
-        params.filterByInertia = True
-        params.minInertiaRatio = 0.3
-        self.detector = cv2.SimpleBlobDetector_create(params)
-
-        self.colors = {
-            'red': {'lower1': (0, 10, 127), 'upper1': (10, 255, 255), 'lower2': (170, 10, 127),'upper2': (180, 255, 255)},
-            'golf': {'lower1': (5, 50, 80), 'upper1': (25, 255, 255)},
-            'blue': {'lower1': (95, 50, 200), 'upper1': (103, 255, 255)},
-            'white': {'lower1': (0, 0, 200), 'upper1': (180, 35, 255)}
+            "brown_min_area": 300,
+            "brown_morph_kernel": (7, 7),
         }
 
-        self.target_color = target_color
-        self.GRIPPER_DISTANCE = 0.26 #meter (change this value if robot consistently stops too soon or late, i.e. calibration is off)
+        self.mtx = np.array(
+            [
+                [642.21815902, 0.0, 406.71091241],
+                [0.0, 639.62546619, 292.02420168],
+                [0.0, 0.0, 1.0],
+            ]
+        )
 
-        self.stage_2 = 0.25 # travel until 25cm are remaining
-        
-        self.last_drive = 0.0
-        self.last_turn = 0.0
-        self.turn_offset = math.radians(6)
+        self.dist = np.array(
+            [[0.02674745, -0.10674703, -0.00277349, 0.0034295, 0.16937755]]
+        )
 
-        # --- Lost Frame Logic ---
-        self.lost_frame_count = 0
-        self.MAX_LOST_FRAMES = 10 # Number of frames to wait before stopping
+        w, h = 806, 602
+        self.newcameramtx, self.roi = cv2.getOptimalNewCameraMatrix(
+            self.mtx, self.dist, (w, h), 1, (w, h)
+        )
+
+        self.mapx, self.mapy = cv2.initUndistortRectifyMap(
+            self.mtx,
+            self.dist,
+            None,
+            self.newcameramtx,
+            (w, h),
+            cv2.CV_32FC1,
+        )
+
+        self.state = 0
+        self.hole_detected = False
+
+        self.GRIPPER_DISTANCE = 0.2
+        self.stage_2 = 0.1
+
+        self.drive_distance_m = 0.0
+        self.turn_angle_deg = 0.0
+        self.servos_done = False
+
+        self.show_debug_windows = False
+        self.save_debug_images = False
+        self.debug_dir = "/home/local/debug_images"
+        self.debug_counter = 0
+        self.debug_save_every = 1
+
+        os.makedirs(self.debug_dir, exist_ok=True)
 
     def get_world_coords(self, u, v):
-        # function to convert u, v cordinates to world x, and world y cordinates
         pixel_vector = np.array([u, v, 1.0], dtype=np.float32).reshape(3, 1)
         transformed = np.dot(self.H, pixel_vector)
+
+        if transformed[2] == 0:
+            return None
+
         world_x = transformed[0] / transformed[2]
         world_y = transformed[1] / transformed[2]
+
         return float(world_x), float(world_y)
 
-    def detect_ball(self, frame, color_name):
-        # function to detect ball on the frame, color name to detect the specific colored ball
-        blurred = cv2.GaussianBlur(frame, (11, 11), 0)
-        hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
-        c = self.colors.get(color_name)
-        
-        mask = cv2.inRange(hsv, c['lower1'], c['upper1'])
-        if 'lower2' in c:
-            mask2 = cv2.inRange(hsv, c['lower2'], c['upper2'])
-            mask = cv2.bitwise_or(mask, mask2)
-        
-        mask = cv2.erode(mask, None, iterations=2)
-        mask = cv2.dilate(mask, None, iterations=2)
-        
-        keypoints = self.detector.detect(~mask)
-        if keypoints:
-            best_kp = max(keypoints, key=lambda x: x.size)
-            return best_kp.pt 
-        return None
+    def _show_or_save_debug(self, name, image):
+        if image is None:
+            return
+
+        if self.show_debug_windows:
+            cv2.imshow(name, image)
+            cv2.waitKey(1)
+
+        if self.save_debug_images:
+            latest_path = os.path.join(self.debug_dir, f"latest_{name}.jpg")
+            cv2.imwrite(latest_path, image)
+
+            if self.debug_counter % self.debug_save_every == 0:
+                ts = int(time.time() * 1000)
+                numbered_path = os.path.join(self.debug_dir, f"{name}_{ts}.jpg")
+                cv2.imwrite(numbered_path, image)
+
+    def detect_hole(self, frame):
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+        brown_mask = cv2.inRange(
+            hsv,
+            self.params["brown_lower"],
+            self.params["brown_upper"],
+        )
+
+        red_mask1 = cv2.inRange(
+            hsv,
+            self.params["red_lower1"],
+            self.params["red_upper1"],
+        )
+
+        red_mask2 = cv2.inRange(
+            hsv,
+            self.params["red_lower2"],
+            self.params["red_upper2"],
+        )
+
+        red_orange_mask = cv2.bitwise_or(red_mask1, red_mask2)
+
+        brown_mask = cv2.bitwise_and(
+            brown_mask,
+            cv2.bitwise_not(red_orange_mask),
+        )
+
+        kernel = cv2.getStructuringElement(
+            cv2.MORPH_ELLIPSE,
+            self.params["brown_morph_kernel"],
+        )
+
+        brown_mask = cv2.morphologyEx(
+            brown_mask,
+            cv2.MORPH_CLOSE,
+            kernel,
+            iterations=2,
+        )
+
+        contours, _ = cv2.findContours(
+            brown_mask,
+            cv2.RETR_EXTERNAL,
+            cv2.CHAIN_APPROX_SIMPLE,
+        )
+
+        debug = frame.copy()
+        best_candidate = None
+        best_area = 0.0
+
+        height, width = frame.shape[:2]
+
+        for cnt in contours:
+            area = cv2.contourArea(cnt)
+
+            if area < self.params["brown_min_area"]:
+                continue
+
+            (x, y), radius = cv2.minEnclosingCircle(cnt)
+
+            # 🚫 FILTER: ignore bottom 1/3 of the CROP
+            if y > int(height * (2/3)):
+                continue
+
+            cv2.drawContours(debug, [cnt], -1, (255, 0, 0), 2)
+            cv2.circle(debug, (int(x), int(y)), int(radius), (0, 255, 255), 2)
+
+            if area > best_area:
+                best_area = area
+                best_candidate = (int(x), int(y))
+
+        if best_candidate is not None:
+            cv2.circle(debug, best_candidate, 8, (0, 255, 0), -1)
+            cv2.putText(
+                debug,
+                f"best: {best_candidate}",
+                (best_candidate[0] + 10, best_candidate[1] - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (0, 255, 0),
+                1,
+                cv2.LINE_AA,
+            )
+
+        self._show_or_save_debug("filtered_hole_debug", debug)
+        self._show_or_save_debug("brown_mask_filtered", brown_mask)
+
+        return best_candidate
 
     def detect_and_compute_target(self):
-        # function to capture frame, call detect ball, and calculate the world coordinates to move to
+        self.debug_counter += 1
+
         ok, frame, _ = cam.getImage()
-        if not ok:
+        if not ok or frame is None:
+            print("Camera read failed")
             return None
 
-        frame_cal = cv2.remap(frame, self.mapx, self.mapy, cv2.INTER_LINEAR)
-        rx, ry, rw, rh = self.roi
-        frame_cal = frame_cal[ry:ry + rh, rx:rx + rw]
+        frame = cv2.remap(frame, self.mapx, self.mapy, cv2.INTER_LINEAR)
 
-        crop_y_start = int(frame_cal.shape[0] / 3)
-        roi_frame = frame_cal[crop_y_start:, :]
+        height, width = frame.shape[:2]
 
-        coords = self.detect_ball(roi_frame, self.target_color)
-        if not coords:
+        # Bottom third of image
+        y_offset = int(height * 2 / 3)
+        crop = frame[y_offset:, :]
+
+        self._show_or_save_debug("full_frame", frame)
+        self._show_or_save_debug("bottom_third_crop", crop)
+
+        center = self.detect_hole(crop)
+
+        full_vis = frame.copy()
+        crop_vis = crop.copy()
+
+        if center is None:
+            print("No hole detected in bottom third")
+            self._show_or_save_debug("full_with_center", full_vis)
+            self._show_or_save_debug("crop_with_center", crop_vis)
             return None
 
-        u, v = coords
-        v_world_space = v + crop_y_start
-        world_x, world_y = self.get_world_coords(u, v_world_space)
+        u_crop, v_crop = center
 
-        # convert
-        target_x = world_y / 100
-        target_y = world_x / 100
+        u_full = u_crop
+        v_full = v_crop + y_offset
+
+        print(f"Hole center in crop coords: ({u_crop}, {v_crop})")
+        print(f"Hole center in full coords: ({u_full}, {v_full})")
+
+        cv2.circle(crop_vis, (u_crop, v_crop), 8, (0, 255, 0), -1)
+        cv2.putText(
+            crop_vis,
+            f"crop: ({u_crop},{v_crop})",
+            (u_crop + 10, v_crop - 10),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (0, 255, 0),
+            1,
+            cv2.LINE_AA,
+        )
+
+        cv2.circle(full_vis, (u_full, v_full), 8, (0, 255, 0), -1)
+        cv2.putText(
+            full_vis,
+            f"full: ({u_full},{v_full})",
+            (u_full + 10, v_full - 10),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (0, 255, 0),
+            1,
+            cv2.LINE_AA,
+        )
+
+        self._show_or_save_debug("crop_with_center", crop_vis)
+        self._show_or_save_debug("full_with_center", full_vis)
+
+        world_coords = self.get_world_coords(u_full, v_full)
+        if world_coords is None:
+            print("Homography transform failed")
+            return None
+
+        world_x, world_y = world_coords
+        print(f"World coords: x={world_x:.2f}, y={world_y:.2f}")
+
+        target_x = world_y / 100.0
+        target_y = world_x / 100.0
 
         distance = math.hypot(target_x, target_y)
         angle = -math.degrees(math.atan2(target_y, target_x))
+
+        print(f"TASK Target distance: {distance:.3f} m")
+        print(f"TASK Target angle: {angle:.2f} deg")
 
         return distance, angle
 
     def start(self):
         super().start()
-        print("[TASK] GolfBallsTask started")
+        print("[TASK] Hole Task Started")
+
         self.state = 0
-        # move servo arm down
+
         self.servo_controller.servo_control(1, 200, 500)
-        time.sleep(0.5)# wait until it is down
+        time.sleep(0.5)
 
-        world_x, world_y = None,None
-        print("[TASK] Capturing camera frame for ball detection...")
+        result = self.detect_and_compute_target()
 
-        ok, frame, _ = cam.getImage()
-        print(f"[TASK] Starting DriveToBallTask, camera frame capture {'succeeded' if ok else 'failed'}")
-        if ok:
-            # 1. Optimized Undistort using Remap
-            frame_cal = cv2.remap(frame, self.mapx, self.mapy, cv2.INTER_LINEAR)
-            rx, ry, rw, rh = self.roi
-            frame_cal = frame_cal[ry:ry + rh, rx:rx + rw]
-                    
-            # 2. Crop to Floor
-            crop_y_start = int(frame_cal.shape[0]/3)
-            roi_frame = frame_cal[crop_y_start:, :]
-
-            # 3. Detection
-            coords = self.detect_ball(roi_frame, self.target_color)
-
-            if coords:
-                self.detect_ball_cam = True
-                self.lost_frame_count = 0 # Reset counter
-                u, v = coords
-                v_world_space = v + crop_y_start 
-                        
-                world_x, world_y = self.get_world_coords(u, v_world_space)
-                print(f"[DETECTION] Detected {self.target_color} ball at pixel ({u:.1f}, {v_world_space:.1f}) -> world ({world_x:.2f}, {world_y:.2f})")
-        
-        if self.detect_ball_cam:
-            #convert from cm to m
-            self.target_x = world_y/100
-            self.target_y = world_x/100
-
-            # Distance to point
-            self.drive_distance_m = (math.hypot(self.target_x, self.target_y)-self.GRIPPER_DISTANCE)
-            print(f"[TASK] Initial drive distance (after stage 2 buffer): {self.drive_distance_m:.2f} m")
-            self.drive_distance_m = math.hypot(self.target_x, self.target_y)-self.GRIPPER_DISTANCE - self.stage_2
-
-            print(f"[TASK] Initial drive distance (after stage 2 buffer): {self.drive_distance_m:.2f} m")
-
-
-            self.turn_angle_deg = -(math.degrees(
-                math.atan2(self.target_y, self.target_x)
-            ))
-            print(f"[TASK] Initial turn angle: {self.turn_angle_deg:.2f} deg, drive distance: {self.drive_distance_m:.2f} m")
-            if self.turn_angle_deg > 4:#left
-                self.turn_angle_deg -= (math.degrees(self.turn_offset)-4)
-            elif self.turn_angle_deg < -4:#right
-                self.turn_angle_deg += math.degrees(self.turn_offset)
-
-            self.return_angle_deg = -self.turn_angle_deg
-
-        print(
-            f"[TASK] DriveToBall started: "
-            f"target_x={self.target_x:.2f}, "
-            f"target_y={self.target_y:.2f}, "
-            f"turn={self.turn_angle_deg:.2f} deg, "
-            f"distance={self.drive_distance_m:.2f} m"
-        )
+        if result is not None:
+            self.hole_detected = True
+            print("[TASK] Hole detected at start")
+            distance, turn = result
+            self.drive_distance_m = distance - self.GRIPPER_DISTANCE - self.stage_2
+            self.drive_distance_m = max(0.0, self.drive_distance_m)
+            self.turn_angle_deg = turn
+        else:
+            self.hole_detected = False
 
     def update(self):
-
         if self.state == 0:
             self.servo_controller.servo_control(1, 200, 300)
             self.state = 1
 
-        #servo arm down and open gripper
         elif self.state == 1:
             if not self.motion_controller.is_busy():
-                print("[TASK] Intersection reached - open gripper and lower the arm if not already in that state")
+                print("[TASK] Intersection reached - open gripper and lower the arm")
                 self.servo_controller.servo_control(1, 210, 300)
-                self.servo_controller.servo_control(2, 0, 300)
+                self.servo_controller.servo_control(2, -1000, 300)
                 self.state = 2
 
-        #check if ball was detected in the start() 
         elif self.state == 2:
-            if not self.detect_ball_cam:
-                self.state = 12
+            if not self.hole_detected:
+                self.state = 13
             else:
                 self.state = 3
 
-        #turn to face the ball
         elif self.state == 3:
             if abs(self.turn_angle_deg) > 1e-6:
                 direction = "right" if self.turn_angle_deg > 0 else "left"
-                print(f"[TASK] Stage 0 - Turning {direction} by {abs(self.turn_angle_deg):.2f} deg")
+                print(
+                    f"[TASK] Stage 0 - Turning {direction} by "
+                    f"{abs(self.turn_angle_deg):.2f} deg"
+                )
                 self.motion_controller.turn_in_place(math.radians(self.turn_angle_deg))
                 self.state = 4
             else:
                 self.state = 5
 
-        # wait until turn is completed
         elif self.state == 4:
             if not self.motion_controller.is_busy():
                 self.state = 5
 
-        # drive to the ball, using follow_for_distance to drive on the line, so that the line can guide it
         elif self.state == 5:
             if self.drive_distance_m > 1e-6:
                 print(f"[TASK] Stage 1 - Driving by {self.drive_distance_m:.2f} m")
                 self.motion_controller.drive_distance(self.drive_distance_m, 0.2)
-                # self.motion_controller.follow_for_distance(self.drive_distance_m, 0.2, action="LEFT")
             self.state = 6
 
-        #wait until the drive is completed
         elif self.state == 6:
             if not self.motion_controller.is_busy():
                 print("[TASK] Stage 1 complete, starting stage 2 correction")
-                # detect the ball again once we are 25cm away from it
+
                 result = self.detect_and_compute_target()
+
                 if result is None:
-                    print("[TASK] Lost ball after stage 1")
+                    print("[TASK] Lost hole after stage 1")
                     self.state = 12
                 else:
                     distance, angle = result
-                    self.drive_error = distance - (self.GRIPPER_DISTANCE + self.stage_2)
                     self.drive_distance_m = max(0.0, distance - self.GRIPPER_DISTANCE)
-                    print(f"[TASK] Stage 2 - Driving by {self.drive_distance_m:.2f} m")
-                    self.drive_distance_m = self.drive_distance_m + (self.drive_error/3)
-                    print("[TASK] Move error = ", self.drive_error)
-                    print(f"[TASK] Stage 2 - Driving by {self.drive_distance_m:.2f} m")
                     self.turn_angle_deg = angle
                     self.state = 7
 
-        #turn to face the ball
         elif self.state == 7:
             if abs(self.turn_angle_deg) > 1e-6:
                 direction = "right" if self.turn_angle_deg > 0 else "left"
-                print(f"[TASK] Stage 2 - Correcting turn {direction} by {abs(self.turn_angle_deg):.2f} deg")
+                print(
+                    f"[TASK] Stage 2 - Correcting turn {direction} by "
+                    f"{abs(self.turn_angle_deg):.2f} deg"
+                )
                 self.motion_controller.turn_in_place(math.radians(self.turn_angle_deg))
                 self.state = 8
             else:
                 self.state = 9
 
-        # wait until turn is completed
         elif self.state == 8:
             if not self.motion_controller.is_busy():
                 self.state = 9
 
-        #drive to the ball
         elif self.state == 9:
             if self.drive_distance_m > 1e-6:
                 print(f"[TASK] Stage 2 - Final drive by {self.drive_distance_m:.2f} m")
-                self.motion_controller.drive_distance(self.drive_distance_m, 0.1)
-                # self.motion_controller.follow_for_distance(self.drive_distance_m, 0.1, action="LEFT")
+                self.motion_controller.drive_distance(self.drive_distance_m, 0.2)
                 self.state = 10
             else:
                 self.state = 11
 
-        # wait until drive is complete, and then close the gripper
         elif self.state == 10:
             if not self.motion_controller.is_busy():
-                self.servo_controller.servo_control(2, -1000, 300)
+                self.servo_controller.servo_control(2, 0, 300)
                 time.sleep(1)
                 self.state = 11
 
         elif self.state == 11:
-            print("[TASK] DriveToPoint completed")
-            # lift the servo arm slowly, 
-            self.servo_controller.servo_control(1, 200, 20)
+            self.servo_controller.servo_control(1, -500, 20)
             self.state = 12
 
         elif self.state == 12:
-            return TaskStatus.DONE
+            if not self.motion_controller.is_busy():
+                print("[TASK] turn right")
+                self.motion_controller.turn_in_place(math.radians(150))
+                self.state = 13
+
+        elif self.state == 13:
+            if not self.motion_controller.is_busy():
+                print("[TASK] DriveToPoint completed")
+                return TaskStatus.DONE
 
         return TaskStatus.RUNNING
 
     def stop(self):
         super().stop()
-        self.motion_controller.stop()
         print("[TASK] DriveToPoint stopped")
