@@ -8,6 +8,7 @@ End: On the line after the seasaw facing away from the roundabout. Arm up and cl
 
 Status:
 """
+# tasks/vivek/drive_to_point_task.py
 
 import math
 from tasks.base_task import BaseTask, TaskStatus
@@ -89,9 +90,9 @@ class DriveToGolf1Task(BaseTask):
         }
 
         self.target_color = target_color
-        self.GRIPPER_DISTANCE = 0.26 #meter (change this value if robot consistently stops too soon or late, i.e. calibration is off)
+        self.GRIPPER_DISTANCE = 0.27 #meter (change this value if robot consistently stops too soon or late, i.e. calibration is off)
 
-        self.stage_2 = 0.25 # travel until 25cm are remaining
+        self.stage_2 = 0.1 # travel until 25cm are remaining
         
         self.last_drive = 0.0
         self.last_turn = 0.0
@@ -157,6 +158,9 @@ class DriveToGolf1Task(BaseTask):
         distance = math.hypot(target_x, target_y)
         angle = -math.degrees(math.atan2(target_y, target_x))
 
+        print(f"[TASK] Camera Detected ball at pixel ({u:.1f}, {v_world_space:.1f}) -> world ({world_x:.2f}, {world_y:.2f})")
+
+
         return distance, angle
 
     def start(self):
@@ -192,7 +196,7 @@ class DriveToGolf1Task(BaseTask):
                 v_world_space = v + crop_y_start 
                         
                 world_x, world_y = self.get_world_coords(u, v_world_space)
-                print(f"[DETECTION] Detected {self.target_color} ball at pixel ({u:.1f}, {v_world_space:.1f}) -> world ({world_x:.2f}, {world_y:.2f})")
+                print(f"[TASK] Camera Detected {self.target_color} ball at pixel ({u:.1f}, {v_world_space:.1f}) -> world ({world_x:.2f}, {world_y:.2f})")
         
         if self.detect_ball_cam:
             #convert from cm to m
@@ -253,176 +257,127 @@ class DriveToGolf1Task(BaseTask):
                 direction = "right" if self.turn_angle_deg > 0 else "left"
                 print(f"[TASK] Stage 0 - Turning {direction} by {abs(self.turn_angle_deg):.2f} deg")
                 self.motion_controller.turn_in_place(math.radians(self.turn_angle_deg))
-                self.state = 4
-            else:
-                self.state = 5
-
-        # wait until turn is completed
-        elif self.state == 4:
-            if not self.motion_controller.is_busy():
-                self.state = 5
+            self.state = 4
 
         # drive to the ball, using follow_for_distance to drive on the line, so that the line can guide it
-        elif self.state == 5:
-            if self.drive_distance_m > 1e-6:
-                print(f"[TASK] Stage 1 - Driving by {self.drive_distance_m:.2f} m")
-                self.motion_controller.follow_for_distance(self.drive_distance_m, 0.2, action="LEFT")
-            self.state = 6
+        elif self.state == 4:
+            if not self.motion_controller.is_busy():
+                if self.drive_distance_m > 1e-6:
+                    print(f"[TASK] Stage 1 - Driving by {self.drive_distance_m:.2f} m")
+                    self.motion_controller.follow_for_distance(self.drive_distance_m, 0.2, action="LEFT")
+                self.state = 5
 
         #wait until the drive is completed
-        elif self.state == 6:
+        elif self.state == 5:
             if not self.motion_controller.is_busy():
                 print("[TASK] Stage 1 complete, starting stage 2 correction")
                 # detect the ball again once we are 25cm away from it
                 result = self.detect_and_compute_target()
                 if result is None:
                     print("[TASK] Lost ball after stage 1")
-                    self.state = 12
+                    self.state = 21
                 else:
                     distance, angle = result
                     self.drive_error = distance - (self.GRIPPER_DISTANCE + self.stage_2)
                     self.drive_distance_m = max(0.0, distance - self.GRIPPER_DISTANCE)
                     print(f"[TASK] Stage 2 - Driving by {self.drive_distance_m:.2f} m")
-                    self.drive_distance_m = self.drive_distance_m + (self.drive_error/3)
+                    self.drive_distance_m = self.drive_distance_m + (self.drive_error)
                     print("[TASK] Move error = ", self.drive_error)
                     print(f"[TASK] Stage 2 - Driving by {self.drive_distance_m:.2f} m")
                     self.turn_angle_deg = angle
-                    self.state = 7
+                    self.state = 6
 
         #turn to face the ball
-        elif self.state == 7:
+        elif self.state == 6:
             if abs(self.turn_angle_deg) > 1e-6:
                 direction = "right" if self.turn_angle_deg > 0 else "left"
                 print(f"[TASK] Stage 2 - Correcting turn {direction} by {abs(self.turn_angle_deg):.2f} deg")
                 self.motion_controller.turn_in_place(math.radians(self.turn_angle_deg))
-                self.state = 8
-            else:
-                self.state = 9
-
-        # wait until turn is completed
-        elif self.state == 8:
-            if not self.motion_controller.is_busy():
-                self.state = 9
+            self.state = 7
 
         #drive to the ball
-        elif self.state == 9:
-            if self.drive_distance_m > 1e-6:
-                print(f"[TASK] Stage 2 - Final drive by {self.drive_distance_m:.2f} m")
-                # self.motion_controller.drive_distance(self.drive_distance_m, 0.2)
-                self.motion_controller.follow_for_distance(self.drive_distance_m, 0.1, action="LEFT")
-                self.state = 10
-            else:
-                self.state = 11
+        elif self.state == 7:
+            if not self.motion_controller.is_busy():
+                if self.drive_distance_m > 1e-6:
+                    print(f"[TASK] Stage 2 - Final drive by {self.drive_distance_m:.2f} m")
+                    # self.motion_controller.drive_distance(self.drive_distance_m, 0.2)
+                    self.motion_controller.follow_for_distance(self.drive_distance_m, 0.1, action="LEFT")
+                self.state = 8
 
         # wait until drive is complete, and then close the gripper
-        elif self.state == 10:
+        elif self.state == 8:
             if not self.motion_controller.is_busy():
                 self.servo_controller.servo_control(2, -1000, 300)
                 time.sleep(1)
-                self.state = 11
+                self.servo_controller.servo_control(1, -500, 20)
+                self.state = 9
 
-        elif self.state == 11:
-            print("[TASK] DriveToPoint completed")
-            # lift the servo arm slowly, 
-            self.servo_controller.servo_control(1, -500, 20)
-            self.state = 12
-
-        if self.state == 12:
+        if self.state == 9:
             print("[TASK] Exiting sea saw")
             self.motion_controller.drive_distance(0.7, 0.1)
             # self.motion_controller.follow_until_line_loss(0.1)
-            self.state = 13
+            self.state = 10
+
+        # Step 2: drive along the hypotenuse to the point
+        elif self.state == 10:
+            if not self.motion_controller.is_busy():
+                print("[TASK] Drive till we find a line")
+                self.motion_controller.drive_to_line(0.1)
+                self.state = 11
+
+        # Step 3: turn back to the original heading
+        elif self.state == 11:
+            if not self.motion_controller.is_busy():
+                print("[TASK] turn right")
+                self.motion_controller.turn_in_place(math.radians(-90))
+                self.state = 12
+        
+        elif self.state == 12:
+            if not self.motion_controller.is_busy():
+                print("[TASK] follow until intersection")
+                self.motion_controller.follow_until_intersection_or_end_line(0.3)
+                self.state = 13
 
         elif self.state == 13:
             if not self.motion_controller.is_busy():
+                print("[TASK] turn straight on the intersection")
+                self.motion_controller.follow_for_distance(2.0,0.4,action="STRAIGHT")
                 self.state = 14
 
-        # Step 2: drive along the hypotenuse to the point
         elif self.state == 14:
-            print("[TASK] Drive till we find a line")
-            self.motion_controller.drive_to_line(0.1)
-            self.state = 15
+            if not self.motion_controller.is_busy():
+                print("[TASK] turn right on the intersection")
+                self.motion_controller.follow_for_distance(2.0,0.4,action="RIGHT")
+                self.state = 15
 
         elif self.state == 15:
             if not self.motion_controller.is_busy():
+                print("[TASK] turn right on the intersection")
+                self.motion_controller.follow_until_intersection_or_end_line(0.4)
                 self.state = 16
 
-        # Step 3: turn back to the original heading
         elif self.state == 16:
-            print("[TASK] turn right")
-            self.motion_controller.turn_in_place(math.radians(-90))
-            self.state = 17
+            if not self.motion_controller.is_busy():
+                print("[TASK] turn right")
+                self.motion_controller.turn_in_place(math.radians(-150))
+                self.state = 17
 
         elif self.state == 17:
             if not self.motion_controller.is_busy():
-                self.state = 18
-        
-        elif self.state == 18:
-            print("[TASK] follow until intersection")
-            self.motion_controller.follow_until_intersection_or_end_line(0.3)
-            self.state = 19
-
-        elif self.state == 19:
-            if not self.motion_controller.is_busy():
+                print("[TASK] turn right")
+                self.motion_controller.drive_distance(0.15, 0.2)
                 self.state = 20
 
         elif self.state == 20:
-            print("[TASK] turn right on the intersection")
-            self.motion_controller.follow_for_distance(2.0,0.4,action="STRAIGHT")
-            self.state = 21
-
+            if not self.motion_controller.is_busy():
+                print("[TASK] turn right on the intersection")
+                self.motion_controller.follow_for_distance(0.25,0.2,action="STRAIGHT")
+                self.state = 21
+            
         elif self.state == 21:
             if not self.motion_controller.is_busy():
-                self.state = 22
-
-        elif self.state == 21:
-            print("[TASK] turn right on the intersection")
-            self.motion_controller.follow_for_distance(2.0,0.4,action="RIGHT")
-            self.state = 22
-
-        elif self.state == 22:
-            if not self.motion_controller.is_busy():
-                self.state = 23
-
-        elif self.state == 23:
-            print("[TASK] turn right on the intersection")
-            self.motion_controller.follow_until_intersection_or_end_line(0.4)
-            self.state = 24
-
-        elif self.state == 24:
-            if not self.motion_controller.is_busy():
-                self.state = 25
-
-        elif self.state == 25:
-            print("[TASK] turn right")
-            self.motion_controller.turn_in_place(math.radians(-90))
-            self.state = 26
-
-        elif self.state == 26:
-            if not self.motion_controller.is_busy():
-                self.state = 27
-
-        elif self.state == 27:
-            print("[TASK] turn right")
-            self.motion_controller.drive_distance(0.3, 0.2)
-            self.state = 28
-
-        elif self.state == 28:
-            if not self.motion_controller.is_busy():
-                self.state = 29
-
-        elif self.state == 29:
-            print("[TASK] turn right on the intersection")
-            self.motion_controller.follow_until_intersection_or_end_line(0.4)
-            self.state = 30
-
-        elif self.state == 30:
-            if not self.motion_controller.is_busy():
-                self.state = 31
-
-        elif self.state == 31:
-            print("[TASK] DriveToPoint completed")
-            return TaskStatus.DONE
+                print("[TASK] DriveToPoint completed")
+                return TaskStatus.DONE
 
         # elif self.state == 12:
         #     return TaskStatus.DONE
@@ -431,5 +386,4 @@ class DriveToGolf1Task(BaseTask):
 
     def stop(self):
         super().stop()
-        self.motion_controller.stop()
         print("[TASK] DriveToPoint stopped")
