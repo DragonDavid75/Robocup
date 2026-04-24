@@ -1,14 +1,13 @@
 """
-tasks/advanced_tasks/d_drop_golf_1.py
+tasks/advanced_tasks/e_second_golf.py
 
-4th task: Drop first golf ball
-Start: On the line after the seasaw facing away from the roundabout. Arm up and closed with the ball.
-Functionality: Drive along the line, skip the first intersection, turn right on the second intersection(m), go up the ramp, stop at third intersection(l). Turn around to face the hole and go forward a bit. Detect the hole and drop the ball.
+5th task: Get and drop second golf ball
+Start: Facing the hole after dropping the ball. Arm down and open.
+Functionality: Turn around, detect the second ball, drive towards it, pick it up. Turn around drive to the hole, and drop the second ball.
 End: Facing the hole after dropping the ball. Arm down and open.
 
-Status: Does what the task order file says, tested separately
+Status: Does what the task file says
 """
-
 
 import math
 import time
