@@ -29,30 +29,39 @@ End: On the line after the seasaw facing away from the roundabout. Arm up and cl
 
 Start: On the line after the seasaw facing away from the roundabout. Arm up and closed with the ball.
 
-Functionality: Drive along the line, skip the first intersection, turn right on the second intersection(m), go up the ramp, stop at third intersection(l). Turn around to face the hole and go forward a bit. Detect the hole and drop the ball.
+Functionality: Drive along the line, skip the first intersection, turn right on the second intersection(m), go up the ramp, stop at third intersection(l). Turn around to face the hole and go forward a bit. Detect the hole and drop the ball. Turn around.
 
-End: Facing the hole after dropping the ball. Arm down and open.
-
-
-## 5th task: Get and drop second golf ball
-
-Start: Facing the hole after dropping the ball. Arm down and open.
-
-Functionality: Turn around, detect the second ball, drive towards it, pick it up. Turn around drive to the hole, and drop the second ball.
-
-End: Facing the hole after dropping the ball. Arm down and open.
+End: Facing the ball after dropping the ball. Arm down and open.
 
 
-## 6th task: Down the stairs
+## 5th task: Get the second golf ball
 
-Start: Facing the hole after dropping the ball. Arm down and open.
+Start: Facing the ball after dropping the ball. Arm down and open.
 
-Functionality: Turn around, find the line, go to intersection(l). Take turn towards the stairs (either take rigth turn or turn around, go a bit further and take a left turn). Go down the stairs, and stop after 1m.
+Functionality: Turn around, detect the second ball, drive towards it, pick it up. Navigate closer to the whole(l2).
+
+End: Facing the hole. Arm up and closed with the ball.
+
+
+# 6th task: Drop second ball
+
+Start: Facing the hole. Arm up and closed with the ball.
+
+Functionality: Drive to hole, and drop the ball. Turn around.
+
+End: Next to the hole(l3) facing away from it. Arm down and open.
+
+
+## 7th task: Down the stairs
+
+Start: Next to the hole(l3) facing away from it. Arm down and open.
+
+Functionality: Find the line, go to intersection(l). Take turn towards the stairs (either take rigth turn or turn around, go a bit further and take a left turn). Go down the stairs, and stop after 1m.
 
 End: After 1m, after the stairs. Arm up and open.
 
 
-## 7th task: Roundabout to goal
+## 8th task: Roundabout to goal
 
 Start: After 1m, after the stairs. Arm up and open.
 
