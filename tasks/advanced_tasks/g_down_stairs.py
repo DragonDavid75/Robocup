@@ -26,7 +26,7 @@ from tasks.base_tasks.drive_dist_line import DriveDistLineTask
 from mqtt_python.spose import pose
 import time
 
-class DriveToGolf1Task(BaseTask):
+class DriveDownStairs(BaseTask):
     def __init__(
         self,
         world,
@@ -54,7 +54,7 @@ class DriveToGolf1Task(BaseTask):
                 print("[TASK] Intersection reached - open gripper and lower the arm if not already in that state")
                 self.servo_controller.servo_control(1, 210, 300)
                 self.servo_controller.servo_control(2, 0, 300)
-                self.state = 2
+                self.state = 3
         
         #follow until line
         elif self.state == 3:
