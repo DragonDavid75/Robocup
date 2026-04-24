@@ -105,7 +105,7 @@ class StartRoundaboutTask(BaseTask):
         elif self.state == 12:
             self.motion_controller.drive_arc(
                 angle_rad=-math.radians(100),
-                radius=0.390,  #0.375
+                radius=0.380,  #0.375
                 linear_speed=0.2
             )
             self.state = 13
