@@ -19,7 +19,7 @@ from tasks.base_task import BaseTask, TaskStatus
 from mqtt_python.scam import cam
 
 
-class DriveToHoleTask(BaseTask):
+class DriveToHole2Task(BaseTask):
     def __init__(self, world, motion_controller, servo_controller):
         super().__init__(world, motion_controller, servo_controller)
 
@@ -100,8 +100,8 @@ class DriveToHoleTask(BaseTask):
         self.state = 0
         self.hole_detected = False
 
-        self.GRIPPER_DISTANCE = 0.2
-        self.stage_2 = 0.1
+        self.GRIPPER_DISTANCE = self.world.gripper_distance #meter (change this value if robot consistently stops too soon or late, i.e. calibration is off)
+        self.stage_2 = self.world.stage_2 # travel until 25cm are remaining
 
         self.drive_distance_m = 0.0
         self.turn_angle_deg = 0.0
