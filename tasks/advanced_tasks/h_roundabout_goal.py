@@ -1,9 +1,8 @@
 """
-tasks/advanced_tasks/g_roundabout_goal.py
+tasks/advanced_tasks/h_roundabout_goal.py
 
-7th task: Roundabout to goal
 Start: After 1m, after the stairs. Arm up and open.
-Functionality: Go to intersection(n1), turn left, follow line until it ends. Do roundabout through gates(2,3) and exit(d). Go the intersection(b), turn left (either turn left or go forward, turn around and turn right), and go to goal(c).\
+Functionality: Go to intersection(n1), turn left, follow line until it ends. Do roundabout through gates(2,3) and exit(d). Go the intersection(b), turn left (either turn left or go forward, turn around and turn right), and go to goal(c).
 End: Win!
 
 Status:

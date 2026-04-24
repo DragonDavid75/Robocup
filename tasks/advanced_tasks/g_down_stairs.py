@@ -1,9 +1,9 @@
 """
-tasks/advanced_tasks/f_down_stairs.py
+tasks/advanced_tasks/g_down_stairs.py
 
-6th task: Down the stairs
-Start: Facing the hole after dropping the ball. Arm down and open.
-Functionality: Turn around, find the line, go to intersection(l). Take turn towards the stairs (either take rigth turn or turn around, go a bit further and take a left turn). Go down the stairs, and stop after 1m.
+7th task: Down the stairs
+Start: Next to the hole(l3) facing away from it. Arm down and open.
+Functionality: Find the line, go to intersection(l). Take turn towards the stairs (either take rigth turn or turn around, go a bit further and take a left turn). Go down the stairs, and stop after 1m.
 End: After 1m, after the stairs. Arm up and open.
 
 Status:

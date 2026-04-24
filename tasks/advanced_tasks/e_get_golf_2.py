@@ -1,10 +1,10 @@
 """
-tasks/advanced_tasks/e_second_golf.py
+tasks/advanced_tasks/e_get_golf_2.py
 
-5th task: Get and drop second golf ball
-Start: Facing the hole after dropping the ball. Arm down and open.
-Functionality: Turn around, detect the second ball, drive towards it, pick it up. Turn around drive to the hole, and drop the second ball.
-End: Facing the hole after dropping the ball. Arm down and open.
+5th task: Get the second golf ball
+Start: Facing the ball after dropping the ball. Arm down and open.
+Functionality: Turn around, detect the second ball, drive towards it, pick it up. Navigate closer to the whole(l2).
+End: Facing the hole. Arm up and closed with the ball.
 
 Status: Does what the task file says
 """
