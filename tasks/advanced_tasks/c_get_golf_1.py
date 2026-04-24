@@ -6,7 +6,7 @@ Start: 50cm on the seasaw along the line from the intersection(j). Arm lowered a
 Functionality: Detect golf ball, drive to it, and grab it. Drives along the line on the seasaw until the end of the line. Exits seasaw, finds next line and turns right.
 End: On the line after the seasaw facing away from the roundabout. Arm up and closed with the ball.
 
-Status:
+Status: Does what the task order file says, tested separately
 """
 # tasks/vivek/drive_to_point_task.py
 
