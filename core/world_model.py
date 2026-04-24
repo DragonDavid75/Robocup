@@ -27,6 +27,10 @@ class WorldModel:
         self.ir_values = []
         self.image = None
 
+        # --- Other variables ---
+        self.gripper_distance = 0.27
+        self.stage_2 = 0.1
+
         # --- Mission state ---
         self.current_task = None
         self.mission_state = "IDLE"
