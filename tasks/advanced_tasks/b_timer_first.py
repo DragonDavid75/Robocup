@@ -14,6 +14,7 @@ from tasks.base_tasks.drive_dist import DriveDistTask
 from tasks.base_tasks.drive_dist_line import DriveDistLineTask
 from mqtt_python.spose import pose
 import time
+import math
 
 
 class TimerFirstTask(BaseTask):
@@ -30,12 +31,12 @@ class TimerFirstTask(BaseTask):
     def update(self):
         if self.state == 0:
             self.servo_controller.servo_control(1, -800, 300)
-            self.motion_controller.follow_for_distance(0.2, 0.2)
+            self.motion_controller.drive_distance(0.2, 0.2)
             self.state = 1
 
         elif self.state == 1:
             if not self.motion_controller.is_busy():
-                self.motion_controller.turn_in_place(-1.45)
+                self.motion_controller.turn_in_place(math.radians(-80))
                 self.state = 2
 
         elif self.state == 2:
@@ -50,7 +51,8 @@ class TimerFirstTask(BaseTask):
         #Go to the white line
         elif self.state == 4:
             if not self.motion_controller.is_busy():
-                self.motion_controller.drive_distance(2.7, 0.4)
+                # self.motion_controller.drive_distance(2.7, 0.4)
+                self.motion_controller.drive_to_line(0.4)
                 self.state = 5
         #In the junction turn left to continue on the white line
         elif self.state == 5:

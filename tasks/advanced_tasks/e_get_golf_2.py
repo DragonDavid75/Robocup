@@ -90,9 +90,9 @@ class DriveToGolf2Task(BaseTask):
         }
 
         self.target_color = target_color
-        self.GRIPPER_DISTANCE = 0.27 #meter
+        self.GRIPPER_DISTANCE = self.world.gripper_distance #meter
 
-        self.stage_2 = 0.1 # travel until 25cm are remaining
+        self.stage_2 = self.world.stage_2 # travel until 25cm are remaining
 
         self.last_drive = 0.0
         self.last_turn = 0.0

@@ -5,7 +5,11 @@ from tasks.base_task import TaskStatus
 from tasks.advanced_tasks.a_start_roundabout import StartRoundaboutTask
 from tasks.advanced_tasks.b_timer_first import TimerFirstTask
 from tasks.advanced_tasks.c_get_golf_1 import DriveToGolf1Task
-from tasks.advanced_tasks.d_drop_golf_1 import DriveGolfToHoleTask
+from tasks.advanced_tasks.d_drop_golf_1 import DriveToHole1Task
+from tasks.advanced_tasks.e_get_golf_2 import DriveToGolf2Task
+from tasks.advanced_tasks.f_drop_golf_2 import DriveToHole2Task
+from tasks.advanced_tasks.g_down_stairs import DriveDownStairs
+
 
 
 class MissionManager:
@@ -29,8 +33,13 @@ class MissionManager:
     def build_mission(self):
         self.task_queue.append(StartRoundaboutTask(self.world, self.motion_controller, self.servo_controller))
         self.task_queue.append(TimerFirstTask(self.world, self.motion_controller, self.servo_controller))
-        self.task_queue.append(DriveToGolf1Task(self.world, self.motion_controller, self.servo_controller))
-        self.task_queue.append(DriveGolfToHoleTask(self.world, self.motion_controller, self.servo_controller))
+        self.task_queue.append(DriveToGolf1Task(self.world, self.motion_controller, self.servo_controller, 'golf'))
+        self.task_queue.append(DriveToHole1Task(self.world, self.motion_controller, self.servo_controller))
+        self.task_queue.append(DriveToGolf2Task(self.world, self.motion_controller, self.servo_controller, 'golf'))
+        self.task_queue.append(DriveToHole2Task(self.world, self.motion_controller, self.servo_controller))
+        self.task_queue.append(DriveDownStairs(self.world, self.motion_controller, self.servo_controller))
+
+    
     def start_next_task(self):
         if len(self.task_queue) == 0:
             print("[MISSION] All tasks completed")

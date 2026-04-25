@@ -98,7 +98,7 @@ class StartRoundaboutTask(BaseTask):
         elif self.state == 10:
             self.motion_controller.drive_arc(
                 angle_rad=-math.radians(90),
-                radius=0.39, #0.375
+                radius=0.38, #0.375
                 linear_speed=0.2
             )
             self.state = 11
@@ -113,7 +113,7 @@ class StartRoundaboutTask(BaseTask):
         elif self.state == 12:
             self.motion_controller.drive_arc(
                 angle_rad=-math.radians(100),
-                radius=0.380,  #0.375
+                radius=0.375,  #0.375
                 linear_speed=0.2
             )
             self.state = 13
@@ -137,7 +137,7 @@ class StartRoundaboutTask(BaseTask):
 
         # STATE 16: Drive forward 25 cm
         elif self.state == 16:
-            self.motion_controller.drive_distance(0.25, 0.08)
+            self.motion_controller.drive_distance(0.3, 0.08)
             self.state = 17
 
         # STATE 17: Wait for forward motion to finish
