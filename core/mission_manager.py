@@ -9,7 +9,8 @@ from tasks.advanced_tasks.d_drop_golf_1 import DriveToHole1Task
 from tasks.advanced_tasks.e_get_golf_2 import DriveToGolf2Task
 from tasks.advanced_tasks.f_drop_golf_2 import DriveToHole2Task
 from tasks.advanced_tasks.g_down_stairs import DriveDownStairs
-
+from tasks.vivek.drive_to_point_task import DriveToPointTask
+from tasks.vivek.drive_to_ball_task import DriveToBallTask
 
 
 class MissionManager:
@@ -31,13 +32,17 @@ class MissionManager:
     Each task should be an instance of a class that implements the Task interface (with start, update, and stop methods).
     """
     def build_mission(self):
-        self.task_queue.append(StartRoundaboutTask(self.world, self.motion_controller, self.servo_controller))
-        self.task_queue.append(TimerFirstTask(self.world, self.motion_controller, self.servo_controller))
-        self.task_queue.append(DriveToGolf1Task(self.world, self.motion_controller, self.servo_controller, 'golf'))
-        self.task_queue.append(DriveToHole1Task(self.world, self.motion_controller, self.servo_controller))
-        self.task_queue.append(DriveToGolf2Task(self.world, self.motion_controller, self.servo_controller, 'golf'))
-        self.task_queue.append(DriveToHole2Task(self.world, self.motion_controller, self.servo_controller))
-        self.task_queue.append(DriveDownStairs(self.world, self.motion_controller, self.servo_controller))
+        # self.task_queue.append(StartRoundaboutTask(self.world, self.motion_controller, self.servo_controller))
+        # self.task_queue.append(TimerFirstTask(self.world, self.motion_controller, self.servo_controller))
+        # self.task_queue.append(DriveToGolf1Task(self.world, self.motion_controller, self.servo_controller, 'golf'))
+        # self.task_queue.append(DriveToPointTask(self.world, self.motion_controller, self.servo_controller, target_x=0.25, target_y=0.045))
+
+        # self.task_queue.append(DriveToHole1Task(self.world, self.motion_controller, self.servo_controller))
+        # self.task_queue.append(DriveToGolf2Task(self.world, self.motion_controller, self.servo_controller, 'golf'))
+        # self.task_queue.append(DriveToPointTask(self.world, self.motion_controller, self.servo_controller, target_x=0.25, target_y=0.042))
+        # self.task_queue.append(DriveToHole2Task(self.world, self.motion_controller, self.servo_controller))
+        # self.task_queue.append(DriveDownStairs(self.world, self.motion_controller, self.servo_controller))
+        self.task_queue.append(DriveToBallTask(self.world, self.motion_controller, self.servo_controller, 'red'))
 
     
     def start_next_task(self):

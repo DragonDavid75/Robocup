@@ -52,7 +52,7 @@ class DriveDownStairs(BaseTask):
         elif self.state == 1:
             if not self.motion_controller.is_busy():
                 print("[TASK] Intersection reached - open gripper and lower the arm if not already in that state")
-                self.servo_controller.servo_control(1, -340, 300)
+                self.servo_controller.servo_control(1, -390, 300)
                 self.servo_controller.servo_control(2, 0, 300)
                 self.motion_controller.drive_distance(0.20, 0.2)
                 self.state = 3
@@ -92,6 +92,8 @@ class DriveDownStairs(BaseTask):
         elif self.state == 8:
             if not self.motion_controller.is_busy():
                 print("[TASK] turn right on the intersection")
+                self.servo_controller.servo_control(2, -1000, 500)
+
                 self.motion_controller.follow_until_intersection_or_end_line(0.2)
                 self.state = 9
 
@@ -112,13 +114,13 @@ class DriveDownStairs(BaseTask):
             if not self.motion_controller.is_busy():
                 print("[TASK] turn right on the intersection")
                 # self.motion_controller.follow_for_distance(0.25,0.2,action="STRAIGHT")
-                self.motion_controller.turn_in_place(math.radians(105))
+                self.motion_controller.turn_in_place(math.radians(107))
                 self.state = 12
 
         elif self.state == 12:
             if not self.motion_controller.is_busy():
                 print("[TASK] turn right")
-                self.motion_controller.drive_distance(0.50, 0.2)
+                self.motion_controller.drive_distance(2.0, 0.4)
                 self.servo_controller.servo_control(1, 200, 300)
                 self.state = 13
 
@@ -126,11 +128,18 @@ class DriveDownStairs(BaseTask):
             if not self.motion_controller.is_busy():
                 print("[TASK] turn right on the intersection")
                 # self.motion_controller.follow_for_distance(0.25,0.2,action="STRAIGHT")
-                self.motion_controller.turn_in_place(math.radians(45))
+                self.motion_controller.turn_in_place(math.radians(150))
 
                 self.state = 14
-            
+
         elif self.state == 14:
+            if not self.motion_controller.is_busy():
+                print("[TASK] turn right")
+                self.motion_controller.drive_distance(0.5, 0.4)
+                # self.servo_controller.servo_control(1, 200, 300)
+                self.state = 15
+            
+        elif self.state == 15:
             if not self.motion_controller.is_busy():
                 print("[TASK] DriveToPoint completed")
                 return TaskStatus.DONE

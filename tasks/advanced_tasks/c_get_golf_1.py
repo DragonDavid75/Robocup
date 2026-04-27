@@ -307,7 +307,7 @@ class DriveToGolf1Task(BaseTask):
         # wait until drive is complete, and then close the gripper
         elif self.state == 8:
             if not self.motion_controller.is_busy():
-                self.servo_controller.servo_control(2, -1000, 300)
+                self.servo_controller.servo_control(2, -1000, 500)
                 time.sleep(1)
                 self.servo_controller.servo_control(1, -500, 20)
                 self.state = 9
@@ -322,7 +322,7 @@ class DriveToGolf1Task(BaseTask):
         elif self.state == 10:
             if not self.motion_controller.is_busy():
                 print("[TASK] Drive till we find a line")
-                self.motion_controller.drive_to_line(0.1)
+                self.motion_controller.drive_to_line(0.4)
                 self.state = 11
 
         # Step 3: turn back to the original heading
@@ -371,7 +371,7 @@ class DriveToGolf1Task(BaseTask):
         elif self.state == 20:
             if not self.motion_controller.is_busy():
                 print("[TASK] turn right on the intersection")
-                self.motion_controller.follow_for_distance(0.25,0.2,action="STRAIGHT")
+                self.motion_controller.follow_for_distance(0.23,0.2,action="STRAIGHT")
                 self.state = 21
             
         elif self.state == 21:

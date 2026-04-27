@@ -2,6 +2,7 @@
 
 import math
 from tasks.base_task import BaseTask, TaskStatus
+import time
 
 
 class DriveToPointTask(BaseTask):
@@ -83,6 +84,7 @@ class DriveToPointTask(BaseTask):
     def update(self):
         # Step 1: turn to face the point
         if self.state == 0:
+            self.servo_controller.servo_control(1, 200, 300)
             if abs(self.turn_angle_deg) > 1e-6:
                 direction = "right" if self.turn_angle_deg > 0 else "left"
                 print(
@@ -96,6 +98,7 @@ class DriveToPointTask(BaseTask):
 
         elif self.state == 1:
             if not self.motion_controller.is_busy():
+                self.servo_controller.servo_control(2, -250, 200)
                 self.state = 2
 
         # Step 2: drive along the hypotenuse to the point
@@ -115,6 +118,7 @@ class DriveToPointTask(BaseTask):
 
         elif self.state == 3:
             if not self.motion_controller.is_busy():
+                self.servo_controller.servo_control(2, -250, 200)
                 self.state = 4
 
         # Step 3: turn back to the original heading
@@ -125,16 +129,25 @@ class DriveToPointTask(BaseTask):
                     f"[TASK] Turning back {direction} by "
                     f"{abs(self.return_angle_deg):.2f} deg"
                 )
-                self.motion_controller.turn_in_place(math.radians(self.return_angle_deg))
+                time.sleep(1)
+                # self.motion_controller.turn_in_place(math.radians(self.return_angle_deg))
                 self.state = 5
             else:
                 self.state = 6
 
         elif self.state == 5:
             if not self.motion_controller.is_busy():
+                time.sleep(0.5)
+                self.servo_controller.servo_control(2, 0, 500)
+                self.motion_controller.turn_in_place(math.radians(162))
                 self.state = 6
 
         elif self.state == 6:
+            if not self.motion_controller.is_busy():
+                self.motion_controller.drive_distance(0.2, 0.2)
+                self.state = 7
+
+        elif self.state == 7:
             print("[TASK] DriveToPoint completed")
             return TaskStatus.DONE
 
@@ -142,5 +155,5 @@ class DriveToPointTask(BaseTask):
 
     def stop(self):
         super().stop()
-        self.motion_controller.stop()
+        # self.motion_controller.stop()
         print("[TASK] DriveToPoint stopped")

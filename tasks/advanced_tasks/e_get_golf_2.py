@@ -220,11 +220,11 @@ class DriveToGolf2Task(BaseTask):
             self.return_angle_deg = -self.turn_angle_deg
 
         print(
-            f"[TASK] DriveToBall started: "
-            f"target_x={self.target_x:.2f}, "
-            f"target_y={self.target_y:.2f}, "
-            f"turn={self.turn_angle_deg:.2f} deg, "
-            f"distance={self.drive_distance_m:.2f} m"
+            f"[TASK] ____________________________________\nDriveToBall 2 started: "
+            f"[TASK] target_x={self.target_x:.2f}, "
+            f"[TASK] target_y={self.target_y:.2f}, "
+            f"[TASK] turn={self.turn_angle_deg:.2f} deg, "
+            f"[TASK] distance={self.drive_distance_m:.2f} m"
         )
 
     def update(self):
@@ -244,7 +244,7 @@ class DriveToGolf2Task(BaseTask):
 
         #check if ball was detected in the start()
         elif self.state == 2:
-            if not self.detect_ball_cam:
+            if not self.detect_ball_cam or self.drive_distance_m > 0.34:
                 self.state = 19
             else:
                 self.state = 3
@@ -317,6 +317,12 @@ class DriveToGolf2Task(BaseTask):
             else:
                 self.state = 11
 
+        elif self.state == 19:
+            if not self.motion_controller.is_busy():
+                print("[TASK] drive distance 10")
+                self.motion_controller.drive_distance(0.45, 0.2)
+                self.state = 10
+
         # wait until drive is complete, and then close the gripper
         elif self.state == 10:
             if not self.motion_controller.is_busy():
@@ -370,9 +376,10 @@ class DriveToGolf2Task(BaseTask):
             if not self.motion_controller.is_busy():
                 print("[TASK] follow for distance")
                 self.motion_controller.follow_for_distance(0.25,0.2,action="STRAIGHT")
-                self.state = 19
+                self.state = 20
 
-        elif self.state == 19:
+
+        elif self.state == 20:
             if not self.motion_controller.is_busy():
                 return TaskStatus.DONE
 
