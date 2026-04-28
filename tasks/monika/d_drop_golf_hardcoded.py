@@ -73,7 +73,7 @@ class DropGolfTask(BaseTask):
                 self.state = 12
         #Step 5: Rotate to left to drop the ball in the hole
         elif self.state == 12:
-            self.motion_controller.turn_in_place(math.radians(45))
+            self.motion_controller.turn_in_place(math.radians(105))
             self.state = 13
         elif self.state == 13:
             if not self.motion_controller.is_busy():

@@ -162,7 +162,7 @@ class MotionController(threading.Thread):
             self.robot.stop()
             self.current_task = None
     def _handle_drive_to_line_mission(self):
-        if edge.crossingLine:
+        if edge.lineValid:
             print("% MotionController: Line detected!")
             self.robot.stop()
             self.current_task = None
