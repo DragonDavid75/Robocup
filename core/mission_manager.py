@@ -3,9 +3,11 @@
 import time
 from tasks.base_task import TaskStatus
 from tasks.advanced_tasks.a_start_roundabout import StartRoundaboutTask
-from tasks.advanced_tasks.b_timer_first import TimerFirstTask
-from tasks.advanced_tasks.c_get_golf_1 import DriveToGolf1Task
-from tasks.advanced_tasks.d_drop_golf_1 import DriveGolfToHoleTask
+from tasks.monika.b_timer_first_monika import TimerFirstTask
+from tasks.monika.c_get_golf_1_hardcoded import DriveToGolf1Task
+from tasks.monika.d_drop_golf_hardcoded import DropGolfTask
+from tasks.monika.f_go_home import DriveEndTask
+
 
 
 class MissionManager:
@@ -27,10 +29,13 @@ class MissionManager:
     Each task should be an instance of a class that implements the Task interface (with start, update, and stop methods).
     """
     def build_mission(self):
-        self.task_queue.append(StartRoundaboutTask(self.world, self.motion_controller, self.servo_controller))
-        self.task_queue.append(TimerFirstTask(self.world, self.motion_controller, self.servo_controller))
-        self.task_queue.append(DriveToGolf1Task(self.world, self.motion_controller, self.servo_controller))
-        self.task_queue.append(DriveGolfToHoleTask(self.world, self.motion_controller, self.servo_controller))
+        #self.task_queue.append(StartRoundaboutTask(self.world, self.motion_controller, self.servo_controller))
+        #self.task_queue.append(TimerFirstTask(self.world, self.motion_controller, self.servo_controller))
+        #self.task_queue.append(DriveToGolf1Task(self.world, self.motion_controller, self.servo_controller))
+        #self.task_queue.append(DropGolfTask(self.world, self.motion_controller, self.servo_controller))
+        self.task_queue.append(DriveEndTask(self.world, self.motion_controller, self.servo_controller))
+        #self.task_queue.append(DriveGolfToHoleTask(self.world, self.motion_controller, self.servo_controller))
+        #self.task_queue.append(DriveToGolf1Task(self.world, self.motion_controller, self.servo_controller))
     def start_next_task(self):
         if len(self.task_queue) == 0:
             print("[MISSION] All tasks completed")
