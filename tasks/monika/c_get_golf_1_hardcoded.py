@@ -96,8 +96,9 @@ class DriveToGolf1Task(BaseTask):
                 self.state = 16
 
         elif self.state == 16:
-            print("[TASK] DriveToPoint completed")
-            return TaskStatus.DONE
+            if not self.motion_controller.is_busy():
+                print("[TASK] DriveToPoint completed")
+                return TaskStatus.DONE
 
             # elif self.state == 12:
             #     return TaskStatus.DONE
