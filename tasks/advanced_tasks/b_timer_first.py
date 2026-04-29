@@ -50,7 +50,7 @@ class TimerFirstTask(BaseTask):
         #Go to the white line
         elif self.state == 4:
             if not self.motion_controller.is_busy():
-                self.motion_controller.drive_distance(2.7, 0.4)
+                self.motion_controller.drive_to_line(0.4)
                 self.state = 5
         #In the junction turn left to continue on the white line
         elif self.state == 5:
