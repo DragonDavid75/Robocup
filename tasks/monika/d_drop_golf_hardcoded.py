@@ -29,7 +29,7 @@ class DropGolfTask(BaseTask):
         # Step 1: Reach the first intersection and pass it
         elif self.state == 2:
             print("[TASK] Driving forward 0.1 m")
-            self.motion_controller.follow_for_distance(0.57, 0.4)
+            self.motion_controller.follow_for_distance(0.57, 0.2)
             self.state = 3
         elif self.state == 3:
             if not self.motion_controller.is_busy():
@@ -37,7 +37,7 @@ class DropGolfTask(BaseTask):
                 self.state = 4
         # Step 2: Turn right at intersection
         elif self.state == 4:
-            self.motion_controller.turn_in_place(math.radians(-90))
+            self.motion_controller.turn_in_place(math.radians(-80))
             self.state = 5
         elif self.state == 5:
             if not self.motion_controller.is_busy():
@@ -46,7 +46,7 @@ class DropGolfTask(BaseTask):
         #Step 3: Drive up the ramp
         elif self.state == 6:
             print("[TASK] Driving forward 0.1 m")
-            self.motion_controller.follow_for_distance(3.8, 0.4)
+            self.motion_controller.follow_for_distance(3.8,0.4)
             self.state = 7
         elif self.state == 7:
             if not self.motion_controller.is_busy():
@@ -73,7 +73,7 @@ class DropGolfTask(BaseTask):
                 self.state = 12
         #Step 5: Rotate to left to drop the ball in the hole
         elif self.state == 12:
-            self.motion_controller.turn_in_place(math.radians(105))
+            self.motion_controller.turn_in_place(math.radians(107))
             self.state = 13
         elif self.state == 13:
             if not self.motion_controller.is_busy():
@@ -81,7 +81,7 @@ class DropGolfTask(BaseTask):
                 self.state = 14
         elif self.state == 14:
             if not self.motion_controller.is_busy():
-                self.servo_controller.servo_control(2, 0, 300) #open arm
+                self.servo_controller.servo_control(2, 200, 300) #open arm
                 time.sleep(0.5)
                 self.state = 15
         elif self.state == 15:
@@ -89,6 +89,20 @@ class DropGolfTask(BaseTask):
                 print("[TASK] Opened arm")
                 self.state = 16
         elif self.state == 16:
+            self.motion_controller.drive_distance(0.1, 0.1)
+            self.state = 17
+        elif self.state == 17:
+            if not self.motion_controller.is_busy():
+                print("[TASK] Opened arm")
+                self.state = 18
+        elif self.state == 18:
+            self.motion_controller.turn_in_place(math.radians(-180))
+            self.state = 19
+        elif self.state == 19:
+            if not self.motion_controller.is_busy():
+                print("[TASK] Rotates")
+                self.state = 20
+        elif self.state == 20:
             print("[TASK] DropGolfTask completed")
             return TaskStatus.DONE
                
