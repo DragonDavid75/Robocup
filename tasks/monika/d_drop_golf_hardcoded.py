@@ -1,6 +1,9 @@
 import math
 import time
-
+#START on line after ramp
+#END after dopping the ball and turning
+#The driving on the ramp is not precise enough and always stops at a different place
+#I was thinking of rewriting that to go to the intersection and find the hole from there
 from tasks.base_task import BaseTask, TaskStatus
 
 
