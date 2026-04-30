@@ -21,7 +21,7 @@ class DriveDownStairs(BaseTask):
         self.servo_controller = servo_controller
         self.state = 0
 
-    def start(self):
+    def start(self)-> int:
         super().start()
         print("[TASK] Simple DriveDownStairs started")
         self.state = 0
@@ -30,6 +30,9 @@ class DriveDownStairs(BaseTask):
         # Step 0: drive to the first intersection
         if self.state == 0:
             print("[TASK] Driving away from the hole")
+            #DISABLE SERVO for climbing the stairs
+            self.servo_controller.servo_control(1, 10000, 0)
+            time.sleep(1)
             self.motion_controller.drive_to_line(0.1)
             self.state = 1
         elif self.state == 1:
@@ -51,16 +54,12 @@ class DriveDownStairs(BaseTask):
             if not self.motion_controller.is_busy():
                 print("[TASK] drive forward to exit intersection")
                 self.motion_controller.drive_distance(0.2, 0.1)
-                self.state = 5
-        elif self.state == 5:
-            if not self.motion_controller.is_busy():
-                print("[TASK] drive forward")
-                self.motion_controller.follow_until_intersection_or_end_line(0.2)
                 self.state = 6
         elif self.state == 6:
             if not self.motion_controller.is_busy():
-                print("[TASK] turn left at the intersection before the roundabout")
-                self.motion_controller.turn_in_place(math.radians(90))
+                print("[TASK] drive forward")
+                self.motion_controller.follow_for_distance(3, 0.3) #3m just until down the stairs
+                time.sleep(0.5)
                 self.state = 7
         elif self.state == 7:
             if not self.motion_controller.is_busy():
@@ -71,11 +70,39 @@ class DriveDownStairs(BaseTask):
         elif self.state == 8:
             if not self.motion_controller.is_busy():
                 print("[TASK] DriveDownStairs completed, arm down")
+                print("[TASK] lift the arm before the exit rounabout task")
+                self.servo_controller.servo_control(1, -500, 300) #lift the arm up
+                time.sleep(1)
+                self.state = 9
+        elif self.state == 9:
+            if not self.motion_controller.is_busy():
+                print("[TASK] drive forward")
+                self.motion_controller.drive_distance(0.1, 0.3) #until the intersection after the stairs
+                self.state = 10
+        elif self.state == 10:
+            if not self.motion_controller.is_busy():
+                print("[TASK] drive forward")
+                self.motion_controller.follow_until_intersection_or_end_line(0.3) #until the intersection after the stairs
+                self.state = 11
+        elif self.state == 11:
+            if not self.motion_controller.is_busy():
+                print("[TASK] turn left at the intersection before the roundabout")
+                self.motion_controller.turn_in_place(math.radians(90))
+                self.state = 12
+        elif self.state == 12:
+            if not self.motion_controller.is_busy():
+                print("[TASK] drive a bit to exit the intersection")
+                self.motion_controller.follow_for_distance(0.2, 0.1)
+                self.state = 13
+        
+        elif self.state == 13:
+            if not self.motion_controller.is_busy():
+                print("[TASK] DriveDownStairs completed")
                 return TaskStatus.DONE
                
         return TaskStatus.RUNNING
 
     def stop(self):
             super().stop()
-            self.motion_controller.stop()
+            #self.motion_controller.robot.stop()
             print("[TASK] DriveDownStairs stopped")
