@@ -98,7 +98,7 @@ class StartRoundaboutTask(BaseTask):
         elif self.state == 10:
             self.motion_controller.drive_arc(
                 angle_rad=-math.radians(90),
-                radius=0.38, #0.375
+                radius=0.37, #0.375
                 linear_speed=0.2
             )
             self.state = 11
@@ -112,7 +112,7 @@ class StartRoundaboutTask(BaseTask):
         # STATE 12: Second 90 RIGHT turn
         elif self.state == 12:
             self.motion_controller.drive_arc(
-                angle_rad=-math.radians(100),
+                angle_rad=-math.radians(98),
                 radius=0.37,  #0.375
                 linear_speed=0.2
             )
@@ -126,7 +126,7 @@ class StartRoundaboutTask(BaseTask):
 
         # STATE 14: Turn 90 RIGHT to face exit direction
         elif self.state == 14:
-            self.motion_controller.turn_in_place(math.radians(90))
+            self.motion_controller.turn_in_place(math.radians(85))
             self.state = 15
 
         # STATE 15: Wait for turn to finish

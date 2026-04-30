@@ -1,0 +1,238 @@
+Exception in thread Thread-6:
+Exception in thread Thread-6:
+Exception in thread Thread-6:
+Traceback (most recent call last):
+Traceback (most recent call last):
+Traceback (most recent call last):
+  File "/usr/lib/python3.13/threading.py", line 1043, in _bootstrap_inner
+    self.run()
+    ~~~~~~~~^^
+  File "/usr/lib/python3.13/threading.py", line 1043, in _bootstrap_inner
+    self.run()
+    ~~~~~~~~^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/vision_system.py", line 19, in run
+    ok, img, imgTime = cam.getImage()
+                       ~~~~~~~~~~~~^^
+  File "/usr/lib/python3.13/threading.py", line 1043, in _bootstrap_inner
+    self.run()
+    ~~~~~~~~^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/mqtt_python/scam.py", line 60, in getImage
+    if not fail and not self.cap.isOpened():
+                        ^^^^^^^^^^^^^^^^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/vision_system.py", line 19, in run
+    ok, img, imgTime = cam.getImage()
+                       ~~~~~~~~~~~~^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/vision_system.py", line 19, in run
+    ok, img, imgTime = cam.getImage()
+                       ~~~~~~~~~~~~^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/mqtt_python/scam.py", line 60, in getImage
+    if not fail and not self.cap.isOpened():
+                        ^^^^^^^^^^^^^^^^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/mqtt_python/scam.py", line 60, in getImage
+    if not fail and not self.cap.isOpened():
+                        ^^^^^^^^^^^^^^^^^
+AttributeError: 'dict' object has no attribute 'isOpened'
+AttributeError: 'dict' object has no attribute 'isOpened'
+AttributeError: 'dict' object has no attribute 'isOpened'
+Traceback (most recent call last):
+  File "/home/local/svn/robobot/vivek_new/Robocup/main.py", line 21, in <module>
+    mission = MissionManager(world, motion, servo)
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 29, in __init__
+    self.build_mission()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 53, in build_mission
+    self.task_queue.append(Driveask(self.world, self.motion_controller, self.servo_controller))
+                           ^^^^^^^^
+NameError: name 'Driveask' is not defined
+Traceback (most recent call last):
+  File "/home/local/svn/robobot/vivek_new/Robocup/main.py", line 21, in <module>
+    mission = MissionManager(world, motion, servo)
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 29, in __init__
+    self.build_mission()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 53, in build_mission
+    self.task_queue.append(Driveask(self.world, self.motion_controller, self.servo_controller))
+                           ^^^^^^^^
+NameError: name 'Driveask' is not defined
+Traceback (most recent call last):
+  File "/home/local/svn/robobot/vivek_new/Robocup/main.py", line 21, in <module>
+    mission = MissionManager(world, motion, servo)
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 29, in __init__
+    self.build_mission()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 53, in build_mission
+    self.task_queue.append(Driveask(self.world, self.motion_controller, self.servo_controller))
+                           ^^^^^^^^
+NameError: name 'Driveask' is not defined
+Traceback (most recent call last):
+  File "/home/local/svn/robobot/vivek_new/Robocup/main.py", line 21, in <module>
+    mission = MissionManager(world, motion, servo)
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 29, in __init__
+    self.build_mission()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 53, in build_mission
+    self.task_queue.append(Driveask(self.world, self.motion_controller, self.servo_controller))
+                           ^^^^^^^^
+NameError: name 'Driveask' is not defined
+Traceback (most recent call last):
+  File "/home/local/svn/robobot/vivek_new/Robocup/main.py", line 21, in <module>
+    mission = MissionManager(world, motion, servo)
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 29, in __init__
+    self.build_mission()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 53, in build_mission
+    self.task_queue.append(Driveask(self.world, self.motion_controller, self.servo_controller))
+                           ^^^^^^^^
+NameError: name 'Driveask' is not defined
+Traceback (most recent call last):
+  File "/home/local/svn/robobot/vivek_new/Robocup/main.py", line 21, in <module>
+    mission = MissionManager(world, motion, servo)
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 29, in __init__
+    self.build_mission()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 53, in build_mission
+    self.task_queue.append(Driveask(self.world, self.motion_controller, self.servo_controller))
+                           ^^^^^^^^
+NameError: name 'Driveask' is not defined
+Traceback (most recent call last):
+  File "/home/local/svn/robobot/vivek_new/Robocup/main.py", line 21, in <module>
+    mission = MissionManager(world, motion, servo)
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 29, in __init__
+    self.build_mission()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 53, in build_mission
+    self.task_queue.append(Driveask(self.world, self.motion_controller, self.servo_controller))
+                           ^^^^^^^^
+NameError: name 'Driveask' is not defined
+Traceback (most recent call last):
+  File "/home/local/svn/robobot/vivek_new/Robocup/main.py", line 21, in <module>
+    mission = MissionManager(world, motion, servo)
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 29, in __init__
+    self.build_mission()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 53, in build_mission
+    self.task_queue.append(Driveask(self.world, self.motion_controller, self.servo_controller))
+                           ^^^^^^^^
+NameError: name 'Driveask' is not defined
+Traceback (most recent call last):
+  File "/home/local/svn/robobot/vivek_new/Robocup/main.py", line 21, in <module>
+    mission = MissionManager(world, motion, servo)
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 29, in __init__
+    self.build_mission()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 53, in build_mission
+    self.task_queue.append(Driveask(self.world, self.motion_controller, self.servo_controller))
+                           ^^^^^^^^
+NameError: name 'Driveask' is not defined
+Traceback (most recent call last):
+  File "/home/local/svn/robobot/vivek_new/Robocup/main.py", line 21, in <module>
+    mission = MissionManager(world, motion, servo)
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 29, in __init__
+    self.build_mission()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 53, in build_mission
+    self.task_queue.append(Driveask(self.world, self.motion_controller, self.servo_controller))
+                           ^^^^^^^^
+NameError: name 'Driveask' is not defined
+Traceback (most recent call last):
+  File "/home/local/svn/robobot/vivek_new/Robocup/main.py", line 21, in <module>
+    mission = MissionManager(world, motion, servo)
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 29, in __init__
+    self.build_mission()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 53, in build_mission
+    self.task_queue.append(Driveask(self.world, self.motion_controller, self.servo_controller))
+                           ^^^^^^^^
+NameError: name 'Driveask' is not defined
+Traceback (most recent call last):
+  File "/home/local/svn/robobot/vivek_new/Robocup/main.py", line 21, in <module>
+    mission = MissionManager(world, motion, servo)
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 29, in __init__
+    self.build_mission()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 53, in build_mission
+    self.task_queue.append(Driveask(self.world, self.motion_controller, self.servo_controller))
+                           ^^^^^^^^
+NameError: name 'Driveask' is not defined
+Traceback (most recent call last):
+  File "/home/local/svn/robobot/vivek_new/Robocup/main.py", line 21, in <module>
+    mission = MissionManager(world, motion, servo)
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 29, in __init__
+    self.build_mission()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 53, in build_mission
+    self.task_queue.append(Driveask(self.world, self.motion_controller, self.servo_controller))
+                           ^^^^^^^^
+NameError: name 'Driveask' is not defined
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              Traceback (most recent call last):
+  File "/home/local/svn/robobot/vivek_new/Robocup/main.py", line 21, in <module>
+    mission = MissionManager(world, motion, servo)
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 29, in __init__
+    self.build_mission()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 53, in build_mission
+    self.task_queue.append(Driveask(self.world, self.motion_controller, self.servo_controller))
+                           ^^^^^^^^
+NameError: name 'Driveask' is not defined
+Traceback (most recent call last):
+  File "/home/local/svn/robobot/vivek_new/Robocup/main.py", line 21, in <module>
+    mission = MissionManager(world, motion, servo)
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 29, in __init__
+    self.build_mission()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 53, in build_mission
+    self.task_queue.append(Driveask(self.world, self.motion_controller, self.servo_controller))
+                           ^^^^^^^^
+NameError: name 'Driveask' is not defined
+Traceback (most recent call last):
+  File "/home/local/svn/robobot/vivek_new/Robocup/main.py", line 21, in <module>
+    mission = MissionManager(world, motion, servo)
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 29, in __init__
+    self.build_mission()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 53, in build_mission
+    self.task_queue.append(Driveask(self.world, self.motion_controller, self.servo_controller))
+                           ^^^^^^^^
+NameError: name 'Driveask' is not defined
+Traceback (most recent call last):
+  File "/home/local/svn/robobot/vivek_new/Robocup/main.py", line 21, in <module>
+    mission = MissionManager(world, motion, servo)
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 29, in __init__
+    self.build_mission()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 53, in build_mission
+    self.task_queue.append(Driveask(self.world, self.motion_controller, self.servo_controller))
+                           ^^^^^^^^
+NameError: name 'Driveask' is not defined
+Exception in thread Thread-6:
+Traceback (most recent call last):
+  File "/usr/lib/python3.13/threading.py", line 1043, in _bootstrap_inner
+    self.run()
+    ~~~~~~~~^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/vision_system.py", line 19, in run
+    ok, img, imgTime = cam.getImage()
+                       ~~~~~~~~~~~~^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/mqtt_python/scam.py", line 60, in getImage
+    if not fail and not self.cap.isOpened():
+                        ^^^^^^^^^^^^^^^^^
+AttributeError: 'dict' object has no attribute 'isOpened'
+Traceback (most recent call last):
+  File "/home/local/svn/robobot/vivek_new/Robocup/main.py", line 32, in <module>
+    mission.update()
+    ~~~~~~~~~~~~~~^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 74, in update
+    status = self.current_task.update()
+  File "/home/local/svn/robobot/vivek_new/Robocup/tasks/advanced_tasks/c_get_golf_1.py", line 318, in update
+    self.motion_controller.follow_for_distance(1,0,1,action="STRAIGHT")
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: MotionController.follow_for_distance() got multiple values for argument 'action'
+Traceback (most recent call last):
+  File "/home/local/svn/robobot/vivek_new/Robocup/main.py", line 32, in <module>
+    mission.update()
+    ~~~~~~~~~~~~~~^^
+  File "/home/local/svn/robobot/vivek_new/Robocup/core/mission_manager.py", line 74, in update
+    status = self.current_task.update()
+  File "/home/local/svn/robobot/vivek_new/Robocup/tasks/advanced_tasks/g_down_stairs_safe.py", line 138, in update
+    self.motion_controller.follow_for_distance(1,0,2,action="STRAIGHT")
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: MotionController.follow_for_distance() got multiple values for argument 'action'

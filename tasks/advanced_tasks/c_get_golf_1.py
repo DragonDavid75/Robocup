@@ -315,7 +315,7 @@ class DriveToGolf1Task(BaseTask):
         if self.state == 9:
             print("[TASK] Exiting sea saw")
             self.motion_controller.drive_distance(1.0, 0.1)
-            # self.motion_controller.follow_until_line_loss(0.1)
+            # self.motion_controller.follow_for_distance(1,0,1,action="STRAIGHT")
             self.state = 10
 
         # Step 2: drive along the hypotenuse to the point

@@ -41,14 +41,14 @@ class MissionManager:
         self.task_queue.append(DriveToGolf2Task(self.world, self.motion_controller, self.servo_controller, 'golf'))
         self.task_queue.append(DriveToPointTask(self.world, self.motion_controller, self.servo_controller, target_x=0.25, target_y=0.045))
 
-        # full run with vision code for colored balls(comment the below 4 tasks for safe run)
-        self.task_queue.append(DriveDownStairs(self.world, self.motion_controller, self.servo_controller))
-        self.task_queue.append(PickAndDropBallTask(self.world, self.motion_controller, self.servo_controller, target_colors=['blue']))
-        self.task_queue.append(PickAndDropBallTask(self.world, self.motion_controller, self.servo_controller, target_colors=['red']))
-        self.task_queue.append(DriveSequenceByLastBallTask(self.world, self.motion_controller, self.servo_controller)) 
+        # # full run with vision code for colored balls(comment the below 4 tasks for safe run)
+        # self.task_queue.append(DriveDownStairs(self.world, self.motion_controller, self.servo_controller))
+        # self.task_queue.append(PickAndDropBallTask(self.world, self.motion_controller, self.servo_controller, target_colors=['blue']))
+        # self.task_queue.append(PickAndDropBallTask(self.world, self.motion_controller, self.servo_controller, target_colors=['red']))
+        # self.task_queue.append(DriveSequenceByLastBallTask(self.world, self.motion_controller, self.servo_controller)) 
 
-        # safe run without vision (uncomment one for safe run)
-        # self.task_queue.append(DriveDownStairsSafe(self.world, self.motion_controller, self.servo_controller))
+        # # safe run without vision (uncomment one for safe run)
+        self.task_queue.append(DriveDownStairsSafe(self.world, self.motion_controller, self.servo_controller))
 
         self.task_queue.append(DriveEndTask(self.world, self.motion_controller, self.servo_controller)) 
         
