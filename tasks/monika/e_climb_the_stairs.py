@@ -65,17 +65,12 @@ class DriveDownStairs(BaseTask):
         elif self.state == 7:
             if not self.motion_controller.is_busy():
                 print("[TASK] drive a bit to exit the intersection")
-                self.motion_controller.follow_for_distance(0.2, 0.1)
+                self.motion_controller.drive_distance(0.2, 0.1)
                 self.state = 8
+
         elif self.state == 8:
             if not self.motion_controller.is_busy():
-                print("[TASK] lift the arm before the exit rounabout task")
-                self.servo_controller.servo_control(1, -500, 300)
-                time.sleep(1.5)
-                self.state = 9
-        elif self.state == 9:
-            if not self.motion_controller.is_busy():
-                print("[TASK] DriveDownStairs completed")
+                print("[TASK] DriveDownStairs completed, arm down")
                 return TaskStatus.DONE
                
         return TaskStatus.RUNNING
