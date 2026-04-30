@@ -44,7 +44,7 @@ class DriveEndTask(BaseTask):
         # STATE 2: Enter roundabout with a small right arc
         elif self.state == 2:
             self.motion_controller.drive_arc(
-                angle_rad=math.radians(75),
+                angle_rad=math.radians(70),
                 radius=0.20,
                 linear_speed=0.2
             )
@@ -59,7 +59,7 @@ class DriveEndTask(BaseTask):
         # STATE 4: Small arc to align on roundabout
         elif self.state == 4:
             self.motion_controller.drive_arc(
-                angle_rad=math.radians(-45),
+                angle_rad=math.radians(-40),
                 radius=0.20,
                 linear_speed=0.09
             )
@@ -180,7 +180,12 @@ class DriveEndTask(BaseTask):
         elif self.state == 26:
             if not self.motion_controller.is_busy():
                 print("[TASK] Wait for the turn")
-                self.motion_controller.follow_for_distance(1, 0.2, "RIGHT") #go home for backup
+                self.motion_controller.follow_until_intersection_or_end_line(0.3) #go home for backup
+                self.state = 27
+        elif self.state == 27:
+            if not self.motion_controller.is_busy():
+                print("[TASK] Wait for the turn")
+                self.motion_controller.follow_for_distance(3.0, 0.2, "RIGHT") #go home for backup
                 self.state = 23
         
  

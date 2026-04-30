@@ -9,11 +9,8 @@ from tasks.advanced_tasks.d_drop_golf_1 import DriveToHole1Task
 from tasks.advanced_tasks.e_get_golf_2 import DriveToGolf2Task
 from tasks.advanced_tasks.f_drop_golf_2 import DriveToHole2Task
 from tasks.advanced_tasks.g_down_stairs import DriveDownStairs
+from tasks.advanced_tasks.g_down_stairs_safe import DriveDownStairsSafe
 from tasks.vivek.drive_to_point_task import DriveToPointTask
-from tasks.vivek.drive_to_ball_task import DriveToBallTask
-from tasks.gabriel.closest_ball import ClosestBall
-from tasks.vivek.drop_aruco import DriveToArUcoTask
-from tasks.vivek.task_turn_drive import TurnAndDriveTask
 from tasks.vivek.pick_and_drop_balls import PickAndDropBallTask
 from tasks.vivek.drive_sequence_by_last_ball import DriveSequenceByLastBallTask
 from tasks.advanced_tasks.h_roundabout_goal import DriveEndTask
@@ -42,12 +39,14 @@ class MissionManager:
         self.task_queue.append(DriveToGolf1Task(self.world, self.motion_controller, self.servo_controller, 'golf'))
         self.task_queue.append(DriveToPointTask(self.world, self.motion_controller, self.servo_controller, target_x=0.25, target_y=0.045))
         self.task_queue.append(DriveToGolf2Task(self.world, self.motion_controller, self.servo_controller, 'golf'))
-        self.task_queue.append(DriveToPointTask(self.world, self.motion_controller, self.servo_controller, target_x=0.25, target_y=0.042))
+        self.task_queue.append(DriveToPointTask(self.world, self.motion_controller, self.servo_controller, target_x=0.25, target_y=0.045))
         self.task_queue.append(DriveDownStairs(self.world, self.motion_controller, self.servo_controller))
-        # # get the first blue ball
+        # # # get the first blue ball
         self.task_queue.append(PickAndDropBallTask(self.world, self.motion_controller, self.servo_controller, target_colors=['blue']))
         self.task_queue.append(PickAndDropBallTask(self.world, self.motion_controller, self.servo_controller, target_colors=['red']))
         self.task_queue.append(DriveSequenceByLastBallTask(self.world, self.motion_controller, self.servo_controller))
+        # self.task_queue.append(DriveDownStairsSafe(self.world, self.motion_controller, self.servo_controller))
+
         self.task_queue.append(DriveEndTask(self.world, self.motion_controller, self.servo_controller)) 
         
 

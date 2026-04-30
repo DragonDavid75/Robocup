@@ -36,7 +36,7 @@ class TimerFirstTask(BaseTask):
 
         elif self.state == 1:
             if not self.motion_controller.is_busy():
-                self.motion_controller.turn_in_place(math.radians(-80))
+                self.motion_controller.turn_in_place(math.radians(-91))
                 self.state = 2
 
         elif self.state == 2:

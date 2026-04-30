@@ -28,7 +28,7 @@ class WorldModel:
         self.image = None
 
         # --- Other variables ---
-        self.gripper_distance = 0.20
+        self.gripper_distance = 0.23
         self.stage_2 = 0.15
 
         # --- Mission state ---

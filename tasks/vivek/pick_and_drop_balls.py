@@ -67,6 +67,8 @@ class PickAndDropBallTask(BaseTask):
         self.stage_2 = self.world.stage_2
         self.turn_offset = math.radians(3)
 
+        self.max_ball_distance_m = 2.5
+
         # --- Calibration & Homography ---
         self.pixel_points = np.array(
             [
@@ -144,9 +146,9 @@ class PickAndDropBallTask(BaseTask):
 
         self.colors = {
             "red": {
-                "lower1": (0, 10, 127),
+                "lower1": (0, 50, 60),
                 "upper1": (10, 255, 255),
-                "lower2": (170, 10, 127),
+                "lower2": (170, 50, 60),
                 "upper2": (180, 255, 255),
             },
             "golf": {
@@ -154,8 +156,8 @@ class PickAndDropBallTask(BaseTask):
                 "upper1": (25, 255, 255),
             },
             "blue": {
-                "lower1": (90, 50, 127),
-                "upper1": (110, 255, 255),
+                "lower1": (105, 50, 60),
+                "upper1": (135, 255, 255),
             },
             "white": {
                 "lower1": (0, 0, 200),
@@ -242,7 +244,16 @@ class PickAndDropBallTask(BaseTask):
             u, v = coords
             v_world_space = v + crop_y_start
             world_x, world_y = self.get_world_coords(u, v_world_space)
+
             distance = math.hypot(world_x / 100, world_y / 100)
+
+            # Ignore balls farther than configured max distance
+            if distance > self.max_ball_distance_m:
+                print(
+                    f"[BALL] Ignoring {color_name} ball at {distance:.2f} m "
+                    f"(max allowed: {self.max_ball_distance_m:.2f} m)"
+                )
+                continue
 
             candidate = {
                 "color": color_name,
@@ -365,7 +376,7 @@ class PickAndDropBallTask(BaseTask):
             bottom_v = float((pts[2][1] + pts[3][1]) / 2.0)
 
             floor_u = bottom_u
-            floor_v = bottom_v + (0.8 * marker_height)
+            floor_v = bottom_v + (0.65 * marker_height)
 
             centers[int(marker_id)] = (floor_u, floor_v)
 
@@ -634,6 +645,12 @@ class PickAndDropBallTask(BaseTask):
 
         elif self.state == 32:
             if not self.motion_controller.is_busy():
+                print("[TASK][PRE-ARUCO] Red: line reached, turning 180 before ArUco detection")
+                self.motion_controller.drive_distance(0.4,0.2)
+                self.state = 33
+
+        elif self.state == 33:
+            if not self.motion_controller.is_busy():
                 print("[TASK][PRE-ARUCO] Red positioning complete")
                 self.state = 40
 
@@ -704,7 +721,7 @@ class PickAndDropBallTask(BaseTask):
             if not self.motion_controller.is_busy():
                 if self.closest_ball == "blue":
                     print("[TASK][DROP] Blue ball: turning 50 degrees after backing out")
-                    self.motion_controller.turn_in_place(math.radians(50))
+                    self.motion_controller.turn_in_place(math.radians(60))
                     self.state = 19
                 else:
                     self.state = 99
