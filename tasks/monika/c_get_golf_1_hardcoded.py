@@ -64,6 +64,7 @@ class DriveToGolf1Task(BaseTask):
             self.state = 8
 
         elif self.state == 8:
+                print("[TASK] Drive the ramp")
                 self.motion_controller.follow_for_distance(0.4, 0.1)
                 self.state = 9
 
@@ -73,16 +74,19 @@ class DriveToGolf1Task(BaseTask):
 
         elif self.state == 10:
             # lift the servo arm 
+            print("[TASK] Lift the arm")
             self.servo_controller.servo_control(1, -500, 300)
             self.state = 11
 
         elif self.state == 11:
-                self.motion_controller.follow_for_distance(0.2, 0.1) #finish the ramp
+                print("[TASK] Finish the ramp")
+                self.motion_controller.follow_for_distance(0.6, 0.1) #finish the ramp
                 self.state = 12
         elif self.state ==12:
             if not self.motion_controller.is_busy():
                 self.state = 13
         elif self.state == 13:
+            print("[TASK] Search for the line")
             self.motion_controller.drive_to_line(0.1) #try to reach the line
             self.state = 14
         
@@ -92,6 +96,7 @@ class DriveToGolf1Task(BaseTask):
 
         elif self.state == 15:
             if not self.motion_controller.is_busy():
+                print("[TASK] Turn right")
                 self.motion_controller.turn_in_place(-1.57) #turn to the right
                 self.state = 16
 
@@ -107,5 +112,5 @@ class DriveToGolf1Task(BaseTask):
 
     def stop(self):
             super().stop()
-            self.motion_controller.stop()
+            self.motion_controller.robot.stop()
             print("[TASK] DriveToPoint stopped")
