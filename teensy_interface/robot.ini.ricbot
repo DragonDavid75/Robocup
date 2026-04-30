@@ -1,0 +1,162 @@
+[service]
+use_robot_hardware = true
+logpath = log_%d/
+; the '%d' will be replaced with date and timestamp (must end with a '/'). = 
+max_logging_minutes = 60.0
+log_service = true
+
+[mqtt]
+system = ric/
+function = state/
+print = false
+log = true
+use = false
+broker = tcp://localhost:1883
+context = ric
+clientid = teeif_out
+
+[mqttin]
+broker = tcp://localhost:1883
+context = drive
+clientid = teeif_in
+function = drive/
+system = ric/
+log = true
+print = false
+use = true
+
+[teensy0]
+use = true
+type = robobot
+idx = 142
+; robot 'name' and 'idx' are read-only, use command line option to change = 
+name = Saturn
+device = /dev/ttyACM0
+devicealt = /dev/ttyACM1
+log = true
+print = false
+confirm_timeout = 0.04
+encrev = true
+hardware = 9
+
+[robot0]
+log = true
+print = false
+regbot_version = 1735
+batteryusedwh = 0.000000
+batterycalibrate = 1.0
+
+[encoder0]
+interval_vel_ms = 8
+interval_pose_ms = 5
+log_enc = true
+log_pose = true
+print = false
+encoder_reversed = false
+
+[imu1teensy0]
+interval_gyro_ms = 12
+interval_acc_ms = 12
+gyro_offset = 0 0 0
+log = true
+print_gyro = false
+print_acc = false
+
+[imu2teensy0]
+use = false
+
+[servotn0]
+interval_ms = 50
+log = true
+print = true
+
+[velocity0]
+enctickperrev = 256
+motorscale = 1 1
+useteensyvel = true
+log = true
+print = false
+
+[motor_teensy_0]
+m1kp = 15.0
+m1lead = 0 1.0
+m1taui = 0.15
+m1feedforward = 0
+m1maxmotv = 10.0
+m1voffset = 0.0
+m2kp = 15.0
+m2lead = 0 1.0
+m2taui = 0.15
+m2feedforward = 0
+m2maxmotv = 10.0
+m2voffset = 0.0
+log_voltage = false
+m1log_pid = false
+m2log_pid = false
+m1print = false
+m2print = false
+interval_motv_ms = 33
+interval_motpwm_ms = 0
+relax_sec = 3.5
+
+[current_teensy_0]
+log = false
+print = false
+interval_ms = 33
+
+[distforce0]
+interval_ird_ms = 0
+log_dist = false
+log_force = true
+print = false
+force = false
+
+[edge0]
+log = true
+print = false
+interval_liv_ms = 0
+interval_livn_ms = 0
+
+[gpio]
+# pins_out = 12=0 16=0
+stop_on_stop = true
+blink_period_ms = 600
+log = true
+print = false
+use = false
+
+[mixer]
+use = true
+log = true
+print = false
+driveleft = 0 0 -1
+driveright = 0 1 -1
+wheelbase = 0.67
+motor_gear = 20
+drive_gear = 1
+wheel_radius = 0.21
+
+[joy_logitech]
+log = true
+print = false
+device = /dev/input/js0
+device_type = Logitech Gamepad F710
+
+[joy_use]
+log = true
+print = false
+drive_control = true
+vel_limit = -1.7
+vel_axis = 4
+turn_limit = 1.0
+turn_axis = 3
+button_fast = 5
+slow_factor = 0.3
+axis_servo = 1
+servo = 1
+servoscale = 10
+
+[ini]
+; set 'saveconfig' to 'false' to avoid autosave = 
+saveconfig = true
+version = 1182 2025-03-27 18:18:29

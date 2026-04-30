@@ -1,0 +1,34 @@
+# tasks/base_task.py
+
+class TaskStatus:
+    RUNNING = 0
+    DONE = 1
+    FAILED = 2
+
+
+class BaseTask:
+
+    def __init__(self, world, motion_controller, servo_controller):
+        self.world = world
+        self.motion_controller = motion_controller
+        self.servo_controller = servo_controller
+        self.started = False
+
+    def start(self):
+        """
+        Called once when task begins.
+        """
+        self.started = True
+
+    def update(self):
+        """
+        Called repeatedly by mission manager.
+        Must return TaskStatus.
+        """
+        return TaskStatus.RUNNING
+
+    def stop(self):
+        """
+        Called once when task finishes or is aborted.
+        """
+        self.started = False
