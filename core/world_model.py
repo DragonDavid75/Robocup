@@ -28,12 +28,13 @@ class WorldModel:
         self.image = None
 
         # --- Other variables ---
-        self.gripper_distance = 0.27
-        self.stage_2 = 0.1
+        self.gripper_distance = 0.20
+        self.stage_2 = 0.15
 
         # --- Mission state ---
         self.current_task = None
         self.mission_state = "IDLE"
+        self.first_ball = None
 
     def set_pose(self, x, y, h):
         with self.lock:
